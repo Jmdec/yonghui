@@ -174,7 +174,7 @@ function ActivateContent() {
               </p>
             </div>
 
-            <div>
+            {/* <div>
               <p className="text-sm text-gray-500 font-semibold">Data</p>
               <p className="text-lg font-bold text-gray-900">
                 {data.plan_data}
@@ -185,7 +185,7 @@ function ActivateContent() {
               <p className="text-lg font-bold text-gray-900">
                 {data.plan_duration} days
               </p>
-            </div>
+            </div> */}
           </div>
           <div className="pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 font-semibold">
