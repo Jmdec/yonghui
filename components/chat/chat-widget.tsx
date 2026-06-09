@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, X, Send } from "lucide-react";
-
+import { usePathname } from "next/navigation";
 interface Message {
   type: "bot" | "user";
   text: string;
@@ -49,9 +49,14 @@ function getBotReply(input: string): string {
 }
 
 export function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>("name");
   const [userName, setUserName] = useState("");
+
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) return null;
+
+  const [isOpen, setIsOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {

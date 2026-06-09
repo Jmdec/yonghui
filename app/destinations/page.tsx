@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Navigation } from "@/components/layout/nav";
 import { useState, useEffect } from "react";
-
+import Footer from "@/components/layout/footer";
 interface Destination {
   id: number;
   name: string;
@@ -693,6 +693,7 @@ export default function DestinationsPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

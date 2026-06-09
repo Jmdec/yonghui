@@ -355,7 +355,7 @@ export default function LoginPage() {
               </div>
               <div className="auth-left-label">eSIM TECHNOLOGY</div>
               <div className="auth-left-title">
-                YONG<span>HUI</span>
+                YH<span></span>
               </div>
               <div className="auth-left-sub">GLOBAL CONNECTIVITY</div>
               <ChipVisual />
