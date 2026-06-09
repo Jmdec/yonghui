@@ -13,7 +13,7 @@ export function LayoutWrapper({ children }: { children: ReactNode }) {
         <PageLoader />
         {children}
         <ChatWidget />
-        <SocialFloat />
+        {/* <SocialFloat /> */}
       </CartProvider>
     </AuthProvider>
   );

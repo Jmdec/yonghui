@@ -468,9 +468,6 @@ function Hero() {
           >
             {started ? (
               <span>
-                <span style={{ animation: "blink-cursor 1s step-end 4" }}>
-                  _
-                </span>
                 <span style={{ marginLeft: -8 }}>Instant</span>
               </span>
             ) : (
