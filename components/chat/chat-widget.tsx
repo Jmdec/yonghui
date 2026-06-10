@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, X, Send } from "lucide-react";
 import { usePathname } from "next/navigation";
+
 interface Message {
   type: "bot" | "user";
   text: string;
@@ -51,11 +52,6 @@ function getBotReply(input: string): string {
 export function ChatWidget() {
   const [step, setStep] = useState<Step>("name");
   const [userName, setUserName] = useState("");
-
-  const pathname = usePathname();
-
-  if (pathname?.startsWith("/admin")) return null;
-
   const [isOpen, setIsOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -67,10 +63,13 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [emailError, setEmailError] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  if (pathname?.startsWith("/admin")) return null;
 
   const pushBot = (text: string) =>
     setMessages((prev) => [...prev, { type: "bot", text }]);
@@ -113,7 +112,6 @@ export function ChatWidget() {
       return;
     }
 
-    // Chat phase
     pushUser(val);
     setTimeout(() => {
       pushBot(getBotReply(val));
@@ -216,7 +214,6 @@ export function ChatWidget() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Step dots */}
             <div className="yh-step-indicator">
               {(["name", "email", "chat"] as Step[]).map((s) => (
                 <div

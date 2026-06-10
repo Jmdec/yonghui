@@ -32,14 +32,20 @@ interface Plan {
   formatted_price: string;
   sort_order: number;
   is_active: boolean;
-  stock: number;
+  // inventory summary from backend
+  codes_available: number;
+  codes_assigned: number;
+  codes_used: number;
+  codes_total: number;
 }
 
-interface Meta {
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
+interface EsimCode {
+  id: number;
+  plan_id: number;
+  code: string;
+  status: "available" | "assigned" | "used";
+  created_at: string;
+  order_id?: number | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -150,6 +156,43 @@ const selectSm: React.CSSProperties = {
   outline: "none",
   fontFamily: "'IBM Plex Mono', monospace",
 };
+
+// ─── Tag ──────────────────────────────────────────────────────────────────────
+function Tag({
+  children,
+  color,
+}: {
+  children: React.ReactNode;
+  color: "blue" | "purple" | "cyan" | "gray" | "green" | "orange" | "red";
+}) {
+  const colors = {
+    blue: { bg: "#EEF2FF", border: "#C7D2FE", text: "#3B5BDB" },
+    purple: { bg: "#F5F3FF", border: "#DDD6FE", text: "#7C3AED" },
+    cyan: { bg: "#ECFEFF", border: "#A5F3FC", text: "#0891B2" },
+    gray: { bg: "#F8FAFF", border: "#D1D9E6", text: "#6B7A99" },
+    green: { bg: "#F0FDF4", border: "#BBF7D0", text: "#16A34A" },
+    orange: { bg: "#FFF7ED", border: "#FEDBA8", text: "#EA580C" },
+    red: { bg: "#FEF2F2", border: "#FECACA", text: "#DC2626" },
+  };
+  const c = colors[color];
+  return (
+    <span
+      style={{
+        padding: "2px 7px",
+        borderRadius: 4,
+        fontSize: 9,
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontWeight: 600,
+        letterSpacing: "0.5px",
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        color: c.text,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
 
 // ─── Pagination ────────────────────────────────────────────────────────────────
 function Pagination({
@@ -285,12 +328,498 @@ function PageBtn({
         color: active ? "#3B5BDB" : disabled ? "#C5CFE0" : "#4A5A7A",
         fontSize: 12,
         cursor: disabled ? "not-allowed" : "pointer",
-        transition: "all 0.15s",
         fontFamily: "'IBM Plex Mono', monospace",
       }}
     >
       {children}
     </button>
+  );
+}
+
+// ─── Inventory Badge ───────────────────────────────────────────────────────────
+function InventoryBadge({
+  available,
+  assigned,
+  used,
+  total,
+}: {
+  available: number;
+  assigned: number;
+  used: number;
+  total: number;
+}) {
+  if (total === 0)
+    return (
+      <span
+        style={{
+          fontSize: 10,
+          color: "#C5CFE0",
+          fontFamily: "'IBM Plex Mono', monospace",
+        }}
+      >
+        no codes
+      </span>
+    );
+  const pctAvail = total > 0 ? (available / total) * 100 : 0;
+  const pctAssign = total > 0 ? (assigned / total) * 100 : 0;
+  const pctUsed = total > 0 ? (used / total) * 100 : 0;
+  return (
+    <div style={{ minWidth: 120 }}>
+      <div
+        style={{
+          height: 5,
+          borderRadius: 3,
+          background: "#EEF2FA",
+          overflow: "hidden",
+          display: "flex",
+          marginBottom: 5,
+        }}
+      >
+        <div
+          style={{
+            width: `${pctAvail}%`,
+            background: "#22C55E",
+            transition: "width .3s",
+          }}
+        />
+        <div style={{ width: `${pctAssign}%`, background: "#3B5BDB" }} />
+        <div style={{ width: `${pctUsed}%`, background: "#E2E8F4" }} />
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <span
+          style={{
+            fontSize: 9,
+            fontFamily: "'IBM Plex Mono', monospace",
+            color: "#16A34A",
+          }}
+        >
+          {available} avail
+        </span>
+        <span
+          style={{
+            fontSize: 9,
+            fontFamily: "'IBM Plex Mono', monospace",
+            color: "#3B5BDB",
+          }}
+        >
+          {assigned} assigned
+        </span>
+        <span
+          style={{
+            fontSize: 9,
+            fontFamily: "'IBM Plex Mono', monospace",
+            color: "#9AAABF",
+          }}
+        >
+          {used} used
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── eSIM Codes Modal (per plan) ───────────────────────────────────────────────
+function EsimCodesModal({
+  plan,
+  destination,
+  onClose,
+}: {
+  plan: Plan;
+  destination: Destination;
+  onClose: () => void;
+}) {
+  const [codes, setCodes] = useState<EsimCode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [bulkText, setBulkText] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [addSuccess, setAddSuccess] = useState("");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "available" | "assigned" | "used"
+  >("all");
+
+  const fetchCodes = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/plans/${plan.id}/esim-codes?per_page=500`,
+      );
+      const data = await res.json();
+      setCodes(data.data ?? []);
+    } catch {
+      setCodes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCodes();
+  }, [plan.id]);
+
+  const handleBulkAdd = async () => {
+    const lines = bulkText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (lines.length === 0) {
+      setAddError("Paste at least one code.");
+      return;
+    }
+    setAdding(true);
+    setAddError("");
+    setAddSuccess("");
+    try {
+      const res = await fetch(`/api/admin/plans/${plan.id}/esim-codes/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: lines }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setAddError(d.message ?? "Failed to add codes.");
+        return;
+      }
+      setAddSuccess(`${d.added ?? lines.length} codes added successfully.`);
+      setBulkText("");
+      fetchCodes();
+    } catch {
+      setAddError("Network error.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async (codeId: number) => {
+    if (!confirm("Delete this code?")) return;
+    await fetch(`/api/admin/esim-codes/${codeId}`, { method: "DELETE" });
+    fetchCodes();
+  };
+
+  const filtered = codes.filter(
+    (c) => filterStatus === "all" || c.status === filterStatus,
+  );
+  const availCount = codes.filter((c) => c.status === "available").length;
+  const assignedCount = codes.filter((c) => c.status === "assigned").length;
+  const usedCount = codes.filter((c) => c.status === "used").length;
+
+  const statusColor = (s: string) =>
+    ({
+      available: { bg: "#F0FDF4", border: "#BBF7D0", color: "#16A34A" },
+      assigned: { bg: "#EEF2FF", border: "#BFCFFF", color: "#3B5BDB" },
+      used: { bg: "#F8FAFF", border: "#D1D9E6", color: "#9AAABF" },
+    })[s] ?? { bg: "#F8FAFF", border: "#D1D9E6", color: "#6B7A99" };
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15,25,60,0.5)",
+          zIndex: 1100,
+          backdropFilter: "blur(6px)",
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: "min(640px, 100vw)",
+          background: "#FAFBFE",
+          borderLeft: "1px solid #D1D9E6",
+          boxShadow: "-8px 0 40px rgba(30,50,120,0.14)",
+          zIndex: 1150,
+          display: "flex",
+          flexDirection: "column",
+          animation: "slideIn 0.25s ease",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "20px 24px 16px",
+            borderBottom: "1px solid #EEF2FA",
+            background: "#FFFFFF",
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 9,
+                  color: "#7C3AED",
+                  letterSpacing: "2px",
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}
+              >
+                // esim code inventory
+              </div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: "#0F172A",
+                }}
+              >
+                {destination.flag} {plan.name}
+              </h2>
+              <p
+                style={{
+                  margin: "3px 0 0",
+                  fontSize: 11,
+                  color: "#9AAABF",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                {availCount} available · {assignedCount} assigned · {usedCount}{" "}
+                used
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                background: "#F1F4FA",
+                border: "1px solid #D1D9E6",
+                color: "#6B7A99",
+                width: 32,
+                height: 32,
+                borderRadius: 7,
+                cursor: "pointer",
+                fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Bulk add */}
+          <div
+            style={{
+              marginTop: 16,
+              background: "#F5F3FF",
+              border: "1px solid #DDD6FE",
+              borderRadius: 10,
+              padding: "14px 16px",
+            }}
+          >
+            <label style={{ ...labelStyle, color: "#7C3AED" }}>
+              Bulk Add Codes (one per line)
+            </label>
+            <textarea
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              placeholder={"QRCODE-ABC123\nQRCODE-DEF456\nQRCODE-GHI789"}
+              style={{
+                ...inputStyle,
+                minHeight: 80,
+                resize: "vertical",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 11,
+              }}
+            />
+            {addError && (
+              <p
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: 11,
+                  color: "#DC2626",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                {addError}
+              </p>
+            )}
+            {addSuccess && (
+              <p
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: 11,
+                  color: "#16A34A",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                {addSuccess}
+              </p>
+            )}
+            <button
+              onClick={handleBulkAdd}
+              disabled={adding}
+              style={{
+                marginTop: 10,
+                padding: "8px 18px",
+                borderRadius: 7,
+                border: "1.5px solid #7C3AED",
+                background: "#7C3AED",
+                color: "#FFFFFF",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: adding ? "not-allowed" : "pointer",
+                opacity: adding ? 0.7 : 1,
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              {adding
+                ? "Adding…"
+                : `+ Add ${bulkText.split("\n").filter((l) => l.trim()).length || ""} Codes`}
+            </button>
+          </div>
+
+          {/* Filter tabs */}
+          <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
+            {(["all", "available", "assigned", "used"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: 999,
+                  fontSize: 10,
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border: "1px solid",
+                  transition: "all .15s",
+                  borderColor: filterStatus === s ? "#7C3AED" : "#D1D9E6",
+                  background: filterStatus === s ? "#7C3AED" : "#FFFFFF",
+                  color: filterStatus === s ? "#FFFFFF" : "#9AAABF",
+                }}
+              >
+                {s}{" "}
+                {s !== "all" &&
+                  `(${codes.filter((c) => c.status === s).length})`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Code list */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+          {loading ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "48px 0",
+                color: "#9AAABF",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 12,
+              }}
+            >
+              loading codes…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>📭</div>
+              <div
+                style={{
+                  color: "#9AAABF",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 12,
+                }}
+              >
+                {filterStatus === "all"
+                  ? "No codes yet — paste some above"
+                  : `No ${filterStatus} codes`}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {filtered.map((code) => {
+                const sc = statusColor(code.status);
+                return (
+                  <div
+                    key={code.id}
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid #E2E8F4",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: 12,
+                        color: "#0F172A",
+                        flex: 1,
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {code.code}
+                    </span>
+                    {code.order_id && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "#9AAABF",
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        order #{code.order_id}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        padding: "3px 9px",
+                        borderRadius: 999,
+                        fontSize: 9,
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontWeight: 600,
+                        letterSpacing: "1px",
+                        background: sc.bg,
+                        border: `1px solid ${sc.border}`,
+                        color: sc.color,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {code.status}
+                    </span>
+                    {code.status === "available" && (
+                      <button
+                        onClick={() => handleDelete(code.id)}
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: 5,
+                          fontSize: 10,
+                          border: "1px solid #FECACA",
+                          background: "#FFFFFF",
+                          color: "#DC2626",
+                          cursor: "pointer",
+                          fontFamily: "'IBM Plex Mono', monospace",
+                        }}
+                      >
+                        del
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -327,9 +856,6 @@ function PlanModal({
   );
   const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? 0);
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
-  const [stock, setStock] = useState(
-    initial?.stock != null ? String(initial.stock) : "0",
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -356,7 +882,6 @@ function PlanModal({
       retail_price: Number(retailPrice),
       sort_order: sortOrder,
       is_active: isActive,
-      stock: Number(stock),
     };
     try {
       const url =
@@ -389,7 +914,7 @@ function PlanModal({
         position: "fixed",
         inset: 0,
         background: "rgba(15,25,60,0.5)",
-        zIndex: 1100,
+        zIndex: 1200,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -411,7 +936,6 @@ function PlanModal({
           overflowY: "auto",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -482,55 +1006,49 @@ function PlanModal({
           </div>
         )}
 
-        {/* Name */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Plan Name *</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Hong Kong 7-Day Data SIM"
+            placeholder="e.g. Japan 7-Day 10GB eSIM"
             style={inputStyle}
           />
         </div>
-
-        {/* Description */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional short description"
-            style={{ ...inputStyle, minHeight: 64, resize: "vertical" }}
+            style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
           />
         </div>
 
-        {/* Data + Validity + Stock row */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr",
             gap: 12,
             marginBottom: 14,
           }}
         >
           <div>
             <label style={labelStyle}>Data (GB)</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                value={unlimited ? "" : dataGb}
-                onChange={(e) => setDataGb(e.target.value)}
-                disabled={unlimited}
-                placeholder="e.g. 12"
-                type="number"
-                min="0"
-                step="0.5"
-                style={{
-                  ...inputStyle,
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  opacity: unlimited ? 0.4 : 1,
-                }}
-              />
-            </div>
+            <input
+              value={unlimited ? "" : dataGb}
+              onChange={(e) => setDataGb(e.target.value)}
+              disabled={unlimited}
+              placeholder="e.g. 10"
+              type="number"
+              min="0"
+              step="0.5"
+              style={{
+                ...inputStyle,
+                fontFamily: "'IBM Plex Mono', monospace",
+                opacity: unlimited ? 0.4 : 1,
+              }}
+            />
             <label
               style={{
                 display: "flex",
@@ -547,7 +1065,6 @@ function PlanModal({
                 type="checkbox"
                 checked={unlimited}
                 onChange={(e) => setUnlimited(e.target.checked)}
-                style={{ cursor: "pointer" }}
               />
               Unlimited
             </label>
@@ -566,23 +1083,8 @@ function PlanModal({
               }}
             />
           </div>
-          <div>
-            <label style={labelStyle}>Stock</label>
-            <input
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              placeholder="e.g. 100"
-              type="number"
-              min="0"
-              style={{
-                ...inputStyle,
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-            />
-          </div>
         </div>
 
-        {/* Speed + SIM Type row */}
         <div
           style={{
             display: "grid",
@@ -606,7 +1108,6 @@ function PlanModal({
                     fontSize: 10,
                     fontFamily: "'IBM Plex Mono', monospace",
                     border: "1.5px solid",
-                    transition: "all 0.12s",
                     borderColor: speed === s ? "#3B5BDB" : "#D1D9E6",
                     background: speed === s ? "#EEF2FF" : "#FFFFFF",
                     color: speed === s ? "#3B5BDB" : "#9AAABF",
@@ -632,7 +1133,6 @@ function PlanModal({
                     fontSize: 10,
                     fontFamily: "'IBM Plex Mono', monospace",
                     border: "1.5px solid",
-                    transition: "all 0.12s",
                     borderColor: simType === s ? "#3B5BDB" : "#D1D9E6",
                     background: simType === s ? "#EEF2FF" : "#FFFFFF",
                     color: simType === s ? "#3B5BDB" : "#9AAABF",
@@ -645,7 +1145,6 @@ function PlanModal({
           </div>
         </div>
 
-        {/* Voice toggle */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Voice Calls</label>
           <div style={{ display: "flex", gap: 8 }}>
@@ -659,9 +1158,7 @@ function PlanModal({
                   fontSize: 11,
                   cursor: "pointer",
                   border: "1.5px solid",
-                  transition: "all 0.15s",
                   fontFamily: "'IBM Plex Mono', monospace",
-                  letterSpacing: "0.5px",
                   borderColor: hasVoice === v ? "#3B5BDB" : "#D1D9E6",
                   background: hasVoice === v ? "#EEF2FF" : "#FFFFFF",
                   color: hasVoice === v ? "#3B5BDB" : "#9AAABF",
@@ -673,7 +1170,6 @@ function PlanModal({
           </div>
         </div>
 
-        {/* Price + Sort + Status */}
         <div
           style={{
             display: "grid",
@@ -739,9 +1235,7 @@ function PlanModal({
                     fontSize: 10,
                     cursor: "pointer",
                     border: "1.5px solid",
-                    transition: "all 0.15s",
                     fontFamily: "'IBM Plex Mono', monospace",
-                    letterSpacing: "0.5px",
                     borderColor:
                       isActive === v ? (v ? "#3B5BDB" : "#DC2626") : "#D1D9E6",
                     background:
@@ -757,7 +1251,6 @@ function PlanModal({
           </div>
         </div>
 
-        {/* Actions */}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button
             onClick={onClose}
@@ -831,7 +1324,7 @@ function DeletePlanModal({
         position: "fixed",
         inset: 0,
         background: "rgba(15,25,60,0.5)",
-        zIndex: 1200,
+        zIndex: 1300,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -882,12 +1375,23 @@ function DeletePlanModal({
             textAlign: "center",
             color: "#6B7A99",
             fontSize: 13,
-            margin: "0 0 24px",
+            margin: "0 0 6px",
             lineHeight: 1.6,
           }}
         >
-          Delete <strong style={{ color: "#1A2540" }}>{plan.name}</strong>? This
-          cannot be undone.
+          Delete <strong style={{ color: "#1A2540" }}>{plan.name}</strong>?
+        </p>
+        <p
+          style={{
+            textAlign: "center",
+            color: "#DC2626",
+            fontSize: 12,
+            margin: "0 0 24px",
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}
+        >
+          ⚠️ All {plan.codes_total} eSIM codes in this plan will also be
+          deleted.
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
           <button
@@ -941,6 +1445,7 @@ function PlansDrawer({
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState<Plan | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Plan | null>(null);
+  const [codesTarget, setCodesTarget] = useState<Plan | null>(null);
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -961,9 +1466,13 @@ function PlansDrawer({
     fetchPlans();
   }, [destination.id]);
 
+  const totalAvailable = plans.reduce(
+    (s, p) => s + (p.codes_available ?? 0),
+    0,
+  );
+
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -974,15 +1483,13 @@ function PlansDrawer({
           backdropFilter: "blur(4px)",
         }}
       />
-
-      {/* Drawer */}
       <div
         style={{
           position: "fixed",
           top: 0,
           right: 0,
           bottom: 0,
-          width: "min(680px, 100vw)",
+          width: "min(720px, 100vw)",
           background: "#FAFBFE",
           borderLeft: "1px solid #D1D9E6",
           boxShadow: "-8px 0 40px rgba(30,50,120,0.12)",
@@ -1045,8 +1552,8 @@ function PlansDrawer({
                   fontFamily: "'IBM Plex Mono', monospace",
                 }}
               >
-                {plans.length} plan{plans.length !== 1 ? "s" : ""} · slug:{" "}
-                {destination.slug}
+                {plans.length} plan{plans.length !== 1 ? "s" : ""} ·{" "}
+                {totalAvailable} codes available total
               </p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -1140,7 +1647,6 @@ function PlansDrawer({
               {plans.map((plan) => (
                 <div
                   key={plan.id}
-                  onClick={() => setEditTarget(plan)}
                   style={{
                     background: "#FFFFFF",
                     border: "1px solid #E2E8F4",
@@ -1149,19 +1655,9 @@ function PlansDrawer({
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
-                    transition: "border-color 0.15s, background 0.15s",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F5F7FF";
-                    e.currentTarget.style.borderColor = "#C7D2FE";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#FFFFFF";
-                    e.currentTarget.style.borderColor = "#E2E8F4";
                   }}
                 >
-                  {/* Price badge */}
+                  {/* Price */}
                   <div
                     style={{
                       minWidth: 72,
@@ -1170,6 +1666,7 @@ function PlansDrawer({
                       border: "1px solid #C7D2FE",
                       borderRadius: 8,
                       padding: "8px 6px",
+                      flexShrink: 0,
                     }}
                   >
                     <div
@@ -1189,7 +1686,6 @@ function PlansDrawer({
                         fontSize: 8,
                         color: "#9AAABF",
                         marginTop: 3,
-                        letterSpacing: "0.5px",
                       }}
                     >
                       PHP
@@ -1211,7 +1707,14 @@ function PlansDrawer({
                     >
                       {plan.name}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 5,
+                        marginBottom: 6,
+                      }}
+                    >
                       <Tag color="blue">{plan.data_label}</Tag>
                       {plan.validity_days && (
                         <Tag color="purple">{plan.validity_days}d</Tag>
@@ -1219,8 +1722,14 @@ function PlansDrawer({
                       <Tag color="cyan">{plan.speed}</Tag>
                       <Tag color="gray">{plan.sim_type}</Tag>
                       {plan.has_voice && <Tag color="green">Voice</Tag>}
-                      <Tag color="orange">📦 {plan.stock}</Tag>
                     </div>
+                    {/* Inventory bar */}
+                    <InventoryBadge
+                      available={plan.codes_available ?? 0}
+                      assigned={plan.codes_assigned ?? 0}
+                      used={plan.codes_used ?? 0}
+                      total={plan.codes_total ?? 0}
+                    />
                   </div>
 
                   {/* Status */}
@@ -1245,10 +1754,27 @@ function PlansDrawer({
                   {/* Actions */}
                   <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditTarget(plan);
+                      onClick={() => setCodesTarget(plan)}
+                      style={{
+                        padding: "5px 10px",
+                        borderRadius: 5,
+                        fontSize: 11,
+                        cursor: "pointer",
+                        border: "1px solid #DDD6FE",
+                        background: "#F5F3FF",
+                        color: "#7C3AED",
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontWeight: 600,
+                        transition: "all .15s",
                       }}
+                    >
+                      codes{" "}
+                      {plan.codes_available > 0
+                        ? `(${plan.codes_available})`
+                        : ""}
+                    </button>
+                    <button
+                      onClick={() => setEditTarget(plan)}
                       className="action-btn"
                       style={{
                         padding: "5px 10px",
@@ -1258,17 +1784,13 @@ function PlansDrawer({
                         color: "#6B7A99",
                         fontSize: 11,
                         cursor: "pointer",
-                        transition: "all 0.15s",
                         fontFamily: "'IBM Plex Mono', monospace",
                       }}
                     >
                       edit
                     </button>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteTarget(plan);
-                      }}
+                      onClick={() => setDeleteTarget(plan)}
                       className="del-btn"
                       style={{
                         padding: "5px 10px",
@@ -1278,7 +1800,6 @@ function PlansDrawer({
                         color: "#9AAABF",
                         fontSize: 11,
                         cursor: "pointer",
-                        transition: "all 0.15s",
                         fontFamily: "'IBM Plex Mono', monospace",
                       }}
                     >
@@ -1292,7 +1813,6 @@ function PlansDrawer({
         </div>
       </div>
 
-      {/* Plan modals (z-index above drawer) */}
       {showAdd && (
         <PlanModal
           mode="add"
@@ -1318,42 +1838,17 @@ function PlansDrawer({
           onDeleted={fetchPlans}
         />
       )}
+      {codesTarget && (
+        <EsimCodesModal
+          plan={codesTarget}
+          destination={destination}
+          onClose={() => {
+            setCodesTarget(null);
+            fetchPlans();
+          }}
+        />
+      )}
     </>
-  );
-}
-
-function Tag({
-  children,
-  color,
-}: {
-  children: React.ReactNode;
-  color: "blue" | "purple" | "cyan" | "gray" | "green" | "orange";
-}) {
-  const colors = {
-    blue: { bg: "#EEF2FF", border: "#C7D2FE", text: "#3B5BDB" },
-    purple: { bg: "#F5F3FF", border: "#DDD6FE", text: "#7C3AED" },
-    cyan: { bg: "#ECFEFF", border: "#A5F3FC", text: "#0891B2" },
-    gray: { bg: "#F8FAFF", border: "#D1D9E6", text: "#6B7A99" },
-    green: { bg: "#F0FDF4", border: "#BBF7D0", text: "#16A34A" },
-    orange: { bg: "#FFF7ED", border: "#FEDBA8", text: "#EA580C" },
-  };
-  const c = colors[color];
-  return (
-    <span
-      style={{
-        padding: "2px 7px",
-        borderRadius: 4,
-        fontSize: 9,
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontWeight: 600,
-        letterSpacing: "0.5px",
-        background: c.bg,
-        border: `1px solid ${c.border}`,
-        color: c.text,
-      }}
-    >
-      {children}
-    </span>
   );
 }
 
@@ -1531,7 +2026,6 @@ function DestinationModal({
           </div>
         )}
 
-        {/* Image upload */}
         <div style={{ marginBottom: 18 }}>
           <label style={labelStyle}>Cover Image</label>
           <div
@@ -1610,7 +2104,6 @@ function DestinationModal({
           />
         </div>
 
-        {/* Flag picker */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Flag Emoji</label>
           <div
@@ -1647,7 +2140,6 @@ function DestinationModal({
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 2,
-                    transition: "all 0.12s",
                     padding: 0,
                   }}
                 >
@@ -1665,9 +2157,7 @@ function DestinationModal({
                       fontSize: 8,
                       fontFamily: "'IBM Plex Mono', monospace",
                       color: isSelected ? "#3B5BDB" : "#9AAABF",
-                      letterSpacing: "0.5px",
                       fontWeight: 600,
-                      lineHeight: 1,
                     }}
                   >
                     {f.label}
@@ -1718,9 +2208,7 @@ function DestinationModal({
                     fontSize: 11,
                     cursor: "pointer",
                     border: "1.5px solid",
-                    transition: "all 0.15s",
                     fontFamily: "'IBM Plex Mono', monospace",
-                    letterSpacing: "0.5px",
                     borderColor:
                       isActive === v ? (v ? "#3B5BDB" : "#DC2626") : "#D1D9E6",
                     background:
@@ -1863,11 +2351,11 @@ function DeleteModal({
             lineHeight: 1.6,
           }}
         >
-          Are you sure you want to delete{" "}
+          Delete{" "}
           <strong style={{ color: "#1A2540" }}>
             {destination.flag} {destination.name}
           </strong>
-          ? All its plans will also be deleted.
+          ? All plans and their eSIM codes will also be deleted.
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
           <button
@@ -1911,7 +2399,7 @@ function DeleteModal({
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminDestinationsPage() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [meta, setMeta] = useState<Meta>({
+  const [meta, setMeta] = useState({
     current_page: 1,
     last_page: 1,
     per_page: 10,
@@ -1932,7 +2420,6 @@ export default function AdminDestinationsPage() {
       d.name.toLowerCase().includes(search.toLowerCase()) ||
       d.slug.toLowerCase().includes(search.toLowerCase()),
   );
-  const totalFiltered = filtered.length;
   const paginated = filtered.slice(
     (currentPage - 1) * perPage,
     currentPage * perPage,
@@ -1975,6 +2462,7 @@ export default function AdminDestinationsPage() {
         .action-btn:hover { border-color: #3B5BDB !important; color: #3B5BDB !important; background: #EEF2FF !important; }
         .del-btn:hover { border-color: #DC2626 !important; color: #DC2626 !important; background: #FEF2F2 !important; }
         .plans-btn:hover { border-color: #0891B2 !important; color: #0891B2 !important; background: #ECFEFF !important; }
+        .codes-btn:hover { border-color: #7C3AED !important; color: #7C3AED !important; background: #F5F3FF !important; }
         .add-btn:hover { background: #2F4AC5 !important; border-color: #2F4AC5 !important; }
         input:focus, textarea:focus { border-color: #3B5BDB !important; box-shadow: 0 0 0 3px rgba(59,91,219,0.1) !important; }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -2036,8 +2524,8 @@ export default function AdminDestinationsPage() {
                 fontFamily: "'IBM Plex Mono', monospace",
               }}
             >
-              {meta.total} record{meta.total !== 1 ? "s" : ""} total · click
-              "plans" to manage eSIM plans per destination
+              {meta.total} record{meta.total !== 1 ? "s" : ""} · click "plans"
+              to manage plans + eSIM codes
             </p>
           </div>
           <button
@@ -2055,7 +2543,6 @@ export default function AdminDestinationsPage() {
               fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
-              transition: "all 0.15s",
               fontFamily: "'Sora', sans-serif",
               boxShadow: "0 2px 8px rgba(59,91,219,0.2)",
             }}
@@ -2122,7 +2609,6 @@ export default function AdminDestinationsPage() {
                   color: "#9AAABF",
                   cursor: "pointer",
                   fontSize: 12,
-                  padding: "0 4px",
                   fontFamily: "'IBM Plex Mono', monospace",
                 }}
               >
@@ -2322,7 +2808,6 @@ export default function AdminDestinationsPage() {
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <div style={{ display: "flex", gap: 5 }}>
-                          {/* Plans button — primary action */}
                           <button
                             className="plans-btn"
                             onClick={(e) => {
@@ -2337,7 +2822,6 @@ export default function AdminDestinationsPage() {
                               color: "#0891B2",
                               fontSize: 11,
                               cursor: "pointer",
-                              transition: "all 0.15s",
                               fontFamily: "'IBM Plex Mono', monospace",
                               fontWeight: 600,
                             }}
@@ -2358,7 +2842,6 @@ export default function AdminDestinationsPage() {
                               color: "#6B7A99",
                               fontSize: 11,
                               cursor: "pointer",
-                              transition: "all 0.15s",
                               fontFamily: "'IBM Plex Mono', monospace",
                             }}
                           >
@@ -2378,7 +2861,6 @@ export default function AdminDestinationsPage() {
                               color: "#9AAABF",
                               fontSize: 11,
                               cursor: "pointer",
-                              transition: "all 0.15s",
                               fontFamily: "'IBM Plex Mono', monospace",
                             }}
                           >
@@ -2393,7 +2875,6 @@ export default function AdminDestinationsPage() {
             </table>
           </div>
 
-          {/* Pagination */}
           <div
             style={{
               padding: "0 20px 16px",
@@ -2402,7 +2883,7 @@ export default function AdminDestinationsPage() {
             }}
           >
             <Pagination
-              total={totalFiltered}
+              total={filtered.length}
               perPage={perPage}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
@@ -2412,7 +2893,6 @@ export default function AdminDestinationsPage() {
         </div>
       </div>
 
-      {/* Destination modals */}
       {showAdd && (
         <DestinationModal
           mode="add"
@@ -2435,8 +2915,6 @@ export default function AdminDestinationsPage() {
           onDeleted={fetchDestinations}
         />
       )}
-
-      {/* Plans drawer */}
       {plansTarget && (
         <PlansDrawer
           destination={plansTarget}

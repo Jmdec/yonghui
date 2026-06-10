@@ -19,17 +19,20 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get("auth_token")?.value;
   const { pathname } = req.nextUrl;
 
+  // Let all API routes pass through — they handle auth themselves
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   const isPublic =
     pathname === "/" ||
     PUBLIC_PATHS.filter((p) => p !== "/").some(
       (p) => pathname === p || pathname.startsWith(`${p}/`),
     );
 
-  // Unauthenticated → redirect to login for protected routes
   if (!token && !isPublic) {
     const loginUrl = new URL("/auth/login", req.url);
     loginUrl.searchParams.set("redirect", pathname);
-
     return NextResponse.redirect(loginUrl);
   }
 

@@ -5,11 +5,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
+interface EsimCode {
+  id: number;
+  code: string;
+  status: "available" | "assigned" | "used";
+}
+
 interface Order {
   id: number;
   reference?: string;
   user?: { name: string; email: string };
   plan?: {
+    id: number;
     name: string;
     data_label?: string;
     validity_days?: number;
@@ -18,8 +25,11 @@ interface Order {
   plan_data?: string;
   payment_method?: string;
   payment_status: string;
-  activation_code?: string;
+  // The single assigned eSIM code for this order
+  esim_code?: EsimCode | null;
+  esim_code_id?: number | null;
   receipt_path?: string;
+  code_sent_at?: string | null;
   created_at: string;
 }
 
@@ -27,9 +37,7 @@ interface Order {
 const MONO = "'IBM Plex Mono', monospace";
 const SORA = "'Sora', sans-serif";
 
-// Manual payment methods that require admin review
 const MANUAL_METHODS = ["gcash", "maya", "bank"];
-const ONLINE_METHODS = ["card"];
 
 const STATUS_MAP: Record<
   string,
@@ -47,12 +55,7 @@ const STATUS_MAP: Record<
     border: "#FECDA7",
     color: "#C2410C",
   },
-  paid: {
-    label: "Paid",
-    bg: "#F0FDF4",
-    border: "#BBF7D0",
-    color: "#16A34A",
-  },
+  paid: { label: "Paid", bg: "#F0FDF4", border: "#BBF7D0", color: "#16A34A" },
   confirmed: {
     label: "Confirmed",
     bg: "#F0FDF4",
@@ -91,7 +94,6 @@ const METHOD_LABEL: Record<
 
 const FILTER_BUTTONS = [
   { key: "all", label: "All" },
-  { key: "pending_receipt", label: "Awaiting Receipt" },
   { key: "pending_review", label: "Under Review" },
   { key: "paid", label: "Paid" },
   { key: "completed", label: "Completed" },
@@ -138,55 +140,668 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-// ── PaymentTypePill ────────────────────────────────────────────────────────────
-function PaymentTypePill({ method }: { method?: string }) {
-  const isManual = isManualPayment(method);
+// ── EsimCodeBadge ──────────────────────────────────────────────────────────────
+function EsimCodeBadge({
+  code,
+  sent,
+}: {
+  code?: EsimCode | null;
+  sent?: string | null;
+}) {
+  if (!code)
+    return (
+      <span style={{ fontSize: 11, color: "#C5CFE0", fontFamily: MONO }}>
+        not assigned
+      </span>
+    );
+  const statusColors = {
+    available: { bg: "#F0FDF4", border: "#BBF7D0", color: "#16A34A" },
+    assigned: { bg: "#EEF2FF", border: "#BFCFFF", color: "#3B5BDB" },
+    used: { bg: "#F8FAFF", border: "#D1D9E6", color: "#9AAABF" },
+  };
+  const sc = statusColors[code.status];
   return (
-    <span
-      style={{
-        display: "inline-block",
-        padding: "2px 7px",
-        borderRadius: 4,
-        fontSize: 9,
-        fontFamily: MONO,
-        fontWeight: 600,
-        letterSpacing: "0.5px",
-        background: isManual ? "#FFF4EC" : "#F0FDF4",
-        border: `1px solid ${isManual ? "#FECDA7" : "#BBF7D0"}`,
-        color: isManual ? "#C2410C" : "#16A34A",
-        marginLeft: 6,
-      }}
-    >
-      {isManual ? "manual" : "online"}
-    </span>
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 11,
+            color: "#0F172A",
+            fontWeight: 600,
+          }}
+        >
+          {code.code.length > 18 ? code.code.slice(0, 18) + "…" : code.code}
+        </span>
+        <span
+          style={{
+            padding: "2px 6px",
+            borderRadius: 4,
+            fontSize: 8,
+            fontFamily: MONO,
+            fontWeight: 600,
+            background: sc.bg,
+            border: `1px solid ${sc.border}`,
+            color: sc.color,
+          }}
+        >
+          {code.status}
+        </span>
+      </div>
+      {sent && (
+        <div
+          style={{
+            fontSize: 9,
+            color: "#9AAABF",
+            fontFamily: MONO,
+            marginTop: 2,
+          }}
+        >
+          ✉ sent {new Date(sent).toLocaleDateString("en-PH")}
+        </div>
+      )}
+    </div>
   );
 }
 
-// ── Detail + Approval Modal ────────────────────────────────────────────────────
+// ── Assign Code Modal ──────────────────────────────────────────────────────────
+function AssignCodeModal({
+  order,
+  onClose,
+  onAssigned,
+}: {
+  order: Order;
+  onClose: () => void;
+  onAssigned: (updatedOrder: Order) => void;
+}) {
+  const [availableCodes, setAvailableCodes] = useState<EsimCode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCodeId, setSelectedCodeId] = useState<number | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const planId = order.plan?.id;
+    if (!planId) {
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/admin/plans/${planId}/esim-codes?status=available&per_page=200`)
+      .then((r) => r.json())
+      .then((d) => setAvailableCodes(d.data ?? []))
+      .catch(() => setAvailableCodes([]))
+      .finally(() => setLoading(false));
+  }, [order.plan?.id]);
+
+  const handleAssign = async () => {
+    if (!selectedCodeId) {
+      setError("Select a code.");
+      return;
+    }
+    setAssigning(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/assign-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ esim_code_id: selectedCodeId }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.message ?? "Failed.");
+        return;
+      }
+      const updated = await res.json();
+      onAssigned(updated.order ?? { ...order, esim_code_id: selectedCodeId });
+      onClose();
+    } catch {
+      setError("Network error.");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(15,25,60,0.5)",
+        zIndex: 1100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#FAFBFE",
+          border: "1px solid #D1D9E6",
+          borderRadius: 14,
+          padding: 28,
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "85vh",
+          overflowY: "auto",
+          boxShadow: "0 8px 40px rgba(30,50,120,0.12)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 18,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 9,
+                color: "#7C3AED",
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+                marginBottom: 4,
+              }}
+            >
+              // assign esim code
+            </div>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 17,
+                fontWeight: 700,
+                color: "#0F172A",
+              }}
+            >
+              Assign Code to {order.reference ?? "#" + order.id}
+            </h2>
+            <p
+              style={{
+                margin: "3px 0 0",
+                fontSize: 11,
+                color: "#9AAABF",
+                fontFamily: MONO,
+              }}
+            >
+              {order.plan?.name ?? order.plan_name}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "#F1F4FA",
+              border: "1px solid #D1D9E6",
+              color: "#6B7A99",
+              width: 30,
+              height: 30,
+              borderRadius: 7,
+              cursor: "pointer",
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {order.esim_code && (
+          <div
+            style={{
+              background: "#EEF2FF",
+              border: "1px solid #BFCFFF",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 16,
+              fontSize: 12,
+              color: "#3B5BDB",
+              fontFamily: MONO,
+            }}
+          >
+            ℹ Currently assigned: <strong>{order.esim_code.code}</strong>.
+            Reassigning will release the old code back to available.
+          </div>
+        )}
+
+        {loading ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "32px 0",
+              color: "#9AAABF",
+              fontFamily: MONO,
+              fontSize: 12,
+            }}
+          >
+            loading available codes…
+          </div>
+        ) : availableCodes.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+            <div style={{ color: "#DC2626", fontFamily: MONO, fontSize: 12 }}>
+              No available codes for this plan.
+            </div>
+            <div
+              style={{
+                color: "#9AAABF",
+                fontFamily: MONO,
+                fontSize: 11,
+                marginTop: 4,
+              }}
+            >
+              Add codes via Destinations → Plans → Codes.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#6B7A99",
+                fontFamily: MONO,
+                marginBottom: 10,
+              }}
+            >
+              {availableCodes.length} available code
+              {availableCodes.length !== 1 ? "s" : ""} — select one:
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                maxHeight: 300,
+                overflowY: "auto",
+              }}
+            >
+              {availableCodes.map((code) => (
+                <div
+                  key={code.id}
+                  onClick={() => setSelectedCodeId(code.id)}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    border: "1.5px solid",
+                    transition: "all .15s",
+                    borderColor:
+                      selectedCodeId === code.id ? "#7C3AED" : "#E2E8F4",
+                    background:
+                      selectedCodeId === code.id ? "#F5F3FF" : "#FFFFFF",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      border: "2px solid",
+                      borderColor:
+                        selectedCodeId === code.id ? "#7C3AED" : "#D1D9E6",
+                      background:
+                        selectedCodeId === code.id ? "#7C3AED" : "transparent",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {selectedCodeId === code.id && (
+                      <div
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: "#FFFFFF",
+                        }}
+                      />
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 12,
+                      color: "#0F172A",
+                      flex: 1,
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {code.code}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {error && (
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 12,
+              color: "#DC2626",
+              fontFamily: MONO,
+            }}
+          >
+            {error}
+          </p>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            justifyContent: "flex-end",
+            marginTop: 20,
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 7,
+              border: "1px solid #D1D9E6",
+              background: "#FFFFFF",
+              color: "#6B7A99",
+              fontSize: 13,
+              cursor: "pointer",
+              fontFamily: SORA,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleAssign}
+            disabled={
+              assigning || !selectedCodeId || availableCodes.length === 0
+            }
+            style={{
+              padding: "9px 20px",
+              borderRadius: 7,
+              border: "1.5px solid #7C3AED",
+              background: "#7C3AED",
+              color: "#FFFFFF",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: assigning || !selectedCodeId ? "not-allowed" : "pointer",
+              opacity: assigning || !selectedCodeId ? 0.6 : 1,
+              fontFamily: SORA,
+            }}
+          >
+            {assigning ? "Assigning…" : "Assign Code"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Send Code Modal ────────────────────────────────────────────────────────────
+function SendCodeModal({
+  order,
+  onClose,
+  onSent,
+}: {
+  order: Order;
+  onClose: () => void;
+  onSent: (orderId: number) => void;
+}) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const email = order.user?.email ?? "";
+
+  const handleSend = async () => {
+    setSending(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/send-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.message ?? "Failed.");
+        return;
+      }
+      onSent(order.id);
+      onClose();
+    } catch {
+      setError("Network error.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(15,25,60,0.5)",
+        zIndex: 1100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#FAFBFE",
+          border: "1px solid #D1D9E6",
+          borderRadius: 14,
+          padding: 28,
+          width: "100%",
+          maxWidth: 420,
+          boxShadow: "0 8px 40px rgba(30,50,120,0.12)",
+        }}
+      >
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: "#F0FDF4",
+            border: "1px solid #BBF7D0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 22,
+            margin: "0 auto 14px",
+          }}
+        >
+          ✉️
+        </div>
+        <h3
+          style={{
+            margin: "0 0 6px",
+            textAlign: "center",
+            color: "#0F172A",
+            fontSize: 16,
+            fontWeight: 700,
+          }}
+        >
+          Send eSIM Code
+        </h3>
+        <p
+          style={{
+            textAlign: "center",
+            color: "#6B7A99",
+            fontSize: 13,
+            margin: "0 0 6px",
+            lineHeight: 1.6,
+          }}
+        >
+          Send the activation code to:
+        </p>
+        <p
+          style={{
+            textAlign: "center",
+            fontFamily: MONO,
+            fontSize: 13,
+            color: "#3B5BDB",
+            margin: "0 0 20px",
+            fontWeight: 600,
+          }}
+        >
+          {email}
+        </p>
+
+        <div
+          style={{
+            background: "#F8FAFF",
+            border: "1px solid #E2E8F4",
+            borderRadius: 8,
+            padding: "12px 14px",
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              color: "#6B7A99",
+              fontFamily: MONO,
+              marginBottom: 4,
+            }}
+          >
+            CODE TO SEND
+          </div>
+          <div
+            style={{
+              fontFamily: MONO,
+              fontSize: 13,
+              color: "#0F172A",
+              fontWeight: 600,
+              wordBreak: "break-all",
+            }}
+          >
+            {order.esim_code?.code}
+          </div>
+        </div>
+
+        {order.code_sent_at && (
+          <div
+            style={{
+              background: "#FFFBEB",
+              border: "1px solid #FDE68A",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 16,
+              fontSize: 12,
+              color: "#92400E",
+              fontFamily: MONO,
+            }}
+          >
+            ⚠ Already sent on{" "}
+            {new Date(order.code_sent_at).toLocaleString("en-PH")}. Sending
+            again will resend.
+          </div>
+        )}
+
+        {error && (
+          <p
+            style={{
+              margin: "0 0 12px",
+              fontSize: 12,
+              color: "#DC2626",
+              fontFamily: MONO,
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 7,
+              border: "1px solid #D1D9E6",
+              background: "#FFFFFF",
+              color: "#6B7A99",
+              fontSize: 13,
+              cursor: "pointer",
+              fontFamily: SORA,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={sending}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 7,
+              border: "1.5px solid #16A34A",
+              background: "#16A34A",
+              color: "#FFFFFF",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: sending ? "not-allowed" : "pointer",
+              opacity: sending ? 0.7 : 1,
+              fontFamily: SORA,
+            }}
+          >
+            {sending ? "Sending…" : "✉ Send Now"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Order Detail Modal ─────────────────────────────────────────────────────────
 function OrderDetailModal({
   order,
   onClose,
   onStatusChange,
+  onOrderUpdate,
 }: {
   order: Order;
   onClose: () => void;
   onStatusChange: (id: number, status: string) => void;
+  onOrderUpdate: (updated: Order) => void;
 }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [showAssign, setShowAssign] = useState(false);
+  const [showSend, setShowSend] = useState(false);
 
   const method = METHOD_LABEL[order.payment_method ?? ""] ?? {
     icon: "💰",
     label: (order.payment_method ?? "—").toUpperCase(),
-    type: "online",
+    type: "online" as const,
   };
   const planName = order.plan?.name ?? order.plan_name ?? "—";
   const planData = order.plan_data ?? order.plan?.data_label ?? "—";
 
-  const canApprove = needsReview(order);
+  const canApprove =
+    isManualPayment(order.payment_method) &&
+    order.payment_status === "pending_review";
   const canReject =
     isManualPayment(order.payment_method) &&
     ["pending_review", "pending_receipt"].includes(order.payment_status);
+  const isApproved = ["paid", "confirmed", "completed"].includes(
+    order.payment_status,
+  );
+  const canSendCode = isApproved && !!order.esim_code;
 
   async function handleAction(action: "approve" | "reject") {
     setActionLoading(action);
@@ -224,18 +839,34 @@ function OrderDetailModal({
     ],
     [
       "Payment",
-      <span key="pay" style={{ display: "flex", alignItems: "center" }}>
-        {method.icon} &nbsp;{method.label}
-        <PaymentTypePill method={order.payment_method} />
+      <span key="pay" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        {method.icon} {method.label}{" "}
+        <span
+          style={{
+            padding: "2px 7px",
+            borderRadius: 4,
+            fontSize: 9,
+            fontFamily: MONO,
+            fontWeight: 600,
+            background: isManualPayment(order.payment_method)
+              ? "#FFF4EC"
+              : "#F0FDF4",
+            border: `1px solid ${isManualPayment(order.payment_method) ? "#FECDA7" : "#BBF7D0"}`,
+            color: isManualPayment(order.payment_method)
+              ? "#C2410C"
+              : "#16A34A",
+            marginLeft: 4,
+          }}
+        >
+          {isManualPayment(order.payment_method) ? "manual" : "online"}
+        </span>
       </span>,
     ],
-    ["Activation", order.activation_code ?? "Not yet assigned"],
     ["Ordered", new Date(order.created_at).toLocaleString("en-PH")],
   ];
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -246,8 +877,6 @@ function OrderDetailModal({
           zIndex: 1000,
         }}
       />
-
-      {/* Modal */}
       <div
         style={{
           position: "fixed",
@@ -256,13 +885,13 @@ function OrderDetailModal({
           transform: "translate(-50%,-50%)",
           zIndex: 1001,
           width: "100%",
-          maxWidth: 460,
+          maxWidth: 480,
           background: "#FAFBFE",
           border: "1px solid #D1D9E6",
           borderRadius: 14,
           padding: 28,
           boxShadow: "0 8px 40px rgba(30,50,120,0.12)",
-          maxHeight: "90vh",
+          maxHeight: "92vh",
           overflowY: "auto",
         }}
       >
@@ -340,7 +969,7 @@ function OrderDetailModal({
                   color: "#6B7A99",
                   fontFamily: MONO,
                   fontSize: 12,
-                  minWidth: 100,
+                  minWidth: 90,
                   flexShrink: 0,
                 }}
               >
@@ -358,8 +987,7 @@ function OrderDetailModal({
               </span>
             </div>
           ))}
-
-          {/* Status row */}
+          {/* Status */}
           <div
             style={{
               display: "flex",
@@ -375,16 +1003,14 @@ function OrderDetailModal({
                 color: "#6B7A99",
                 fontFamily: MONO,
                 fontSize: 12,
-                minWidth: 100,
-                flexShrink: 0,
+                minWidth: 90,
               }}
             >
               Status
             </span>
             <StatusPill status={order.payment_status} />
           </div>
-
-          {/* Receipt row */}
+          {/* Receipt */}
           {order.receipt_path && (
             <div
               style={{
@@ -393,6 +1019,7 @@ function OrderDetailModal({
                 alignItems: "center",
                 gap: 12,
                 padding: "7px 0",
+                borderBottom: "0.5px solid #F1F4FA",
               }}
             >
               <span
@@ -400,8 +1027,7 @@ function OrderDetailModal({
                   color: "#6B7A99",
                   fontFamily: MONO,
                   fontSize: 12,
-                  minWidth: 100,
-                  flexShrink: 0,
+                  minWidth: 90,
                 }}
               >
                 Receipt
@@ -418,8 +1044,164 @@ function OrderDetailModal({
                   textDecoration: "underline",
                 }}
               >
-                View Receipt ↗
+                View ↗
               </a>
+            </div>
+          )}
+        </div>
+
+        {/* ── eSIM Code Section ── */}
+        <div
+          style={{
+            marginTop: 18,
+            background: "#F8FAFF",
+            border: "1px solid #E2E8F4",
+            borderRadius: 10,
+            padding: "14px 16px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 9,
+                color: "#7C3AED",
+                letterSpacing: "1.5px",
+                textTransform: "uppercase",
+              }}
+            >
+              // esim code
+            </div>
+            <button
+              onClick={() => setShowAssign(true)}
+              style={{
+                padding: "4px 12px",
+                borderRadius: 5,
+                fontSize: 10,
+                cursor: "pointer",
+                border: "1px solid #DDD6FE",
+                background: "#F5F3FF",
+                color: "#7C3AED",
+                fontFamily: MONO,
+                fontWeight: 600,
+              }}
+            >
+              {order.esim_code ? "Reassign" : "+ Assign"}
+            </button>
+          </div>
+
+          {order.esim_code ? (
+            <div>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 13,
+                  color: "#0F172A",
+                  fontWeight: 600,
+                  wordBreak: "break-all",
+                  marginBottom: 6,
+                }}
+              >
+                {order.esim_code.code}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: 4,
+                    fontSize: 9,
+                    fontFamily: MONO,
+                    fontWeight: 600,
+                    background:
+                      order.esim_code.status === "assigned"
+                        ? "#EEF2FF"
+                        : "#F0FDF4",
+                    border: `1px solid ${order.esim_code.status === "assigned" ? "#BFCFFF" : "#BBF7D0"}`,
+                    color:
+                      order.esim_code.status === "assigned"
+                        ? "#3B5BDB"
+                        : "#16A34A",
+                  }}
+                >
+                  {order.esim_code.status}
+                </span>
+                {order.code_sent_at && (
+                  <span
+                    style={{ fontSize: 10, color: "#16A34A", fontFamily: MONO }}
+                  >
+                    ✉ Sent{" "}
+                    {new Date(order.code_sent_at).toLocaleDateString("en-PH")}
+                  </span>
+                )}
+              </div>
+              {/* Send button */}
+              {canSendCode && (
+                <button
+                  onClick={() => setShowSend(true)}
+                  style={{
+                    marginTop: 12,
+                    width: "100%",
+                    padding: "9px 0",
+                    borderRadius: 7,
+                    border: "1.5px solid #16A34A",
+                    background: order.code_sent_at ? "#F0FDF4" : "#16A34A",
+                    color: order.code_sent_at ? "#16A34A" : "#FFFFFF",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: SORA,
+                  }}
+                >
+                  {order.code_sent_at
+                    ? "✉ Resend Code to Customer"
+                    : "✉ Send Code to Customer"}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "12px 0" }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#C5CFE0",
+                  fontFamily: MONO,
+                  marginBottom: 6,
+                }}
+              >
+                No code assigned yet
+              </div>
+              {isApproved && (
+                <button
+                  onClick={() => setShowAssign(true)}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: 7,
+                    border: "1.5px solid #7C3AED",
+                    background: "#7C3AED",
+                    color: "#FFFFFF",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: SORA,
+                  }}
+                >
+                  + Assign eSIM Code
+                </button>
+              )}
+              {!isApproved && (
+                <div
+                  style={{ fontSize: 11, color: "#9AAABF", fontFamily: MONO }}
+                >
+                  Approve the order first to assign a code.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -442,11 +1224,11 @@ function OrderDetailModal({
           </div>
         )}
 
-        {/* ── Approval actions (manual payment only) ── */}
+        {/* ── Approval actions ── */}
         {(canApprove || canReject) && (
           <div
             style={{
-              marginTop: 20,
+              marginTop: 16,
               background: "#FFFBEB",
               border: "1px solid #FDE68A",
               borderRadius: 10,
@@ -473,7 +1255,7 @@ function OrderDetailModal({
                 lineHeight: 1.6,
               }}
             >
-              This order was paid via{" "}
+              Paid via{" "}
               <strong style={{ color: "#92400E" }}>{method.label}</strong>.
               Review the receipt before approving.
             </p>
@@ -496,7 +1278,6 @@ function OrderDetailModal({
                     fontFamily: SORA,
                     opacity:
                       actionLoading && actionLoading !== "approve" ? 0.5 : 1,
-                    transition: "all .15s",
                   }}
                 >
                   {actionLoading === "approve"
@@ -514,14 +1295,13 @@ function OrderDetailModal({
                     borderRadius: 7,
                     border: "1.5px solid #DC2626",
                     background: "#FFFFFF",
-                    color: actionLoading === "reject" ? "#DC2626" : "#DC2626",
+                    color: "#DC2626",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: actionLoading ? "not-allowed" : "pointer",
                     fontFamily: SORA,
                     opacity:
                       actionLoading && actionLoading !== "reject" ? 0.5 : 1,
-                    transition: "all .15s",
                   }}
                 >
                   {actionLoading === "reject" ? "Rejecting…" : "✕ Reject Order"}
@@ -531,30 +1311,10 @@ function OrderDetailModal({
           </div>
         )}
 
-        {/* Online payment notice */}
-        {!isManualPayment(order.payment_method) &&
-          order.payment_status === "completed" && (
-            <div
-              style={{
-                marginTop: 20,
-                background: "#F0FDF4",
-                border: "1px solid #BBF7D0",
-                borderRadius: 10,
-                padding: "12px 16px",
-                fontSize: 12,
-                color: "#15803D",
-                fontFamily: MONO,
-              }}
-            >
-              ✓ Auto-approved · online payment confirmed
-            </div>
-          )}
-
-        {/* Close */}
         <button
           onClick={onClose}
           style={{
-            marginTop: 16,
+            marginTop: 14,
             width: "100%",
             padding: "9px 0",
             borderRadius: 7,
@@ -569,6 +1329,27 @@ function OrderDetailModal({
           Close
         </button>
       </div>
+
+      {showAssign && (
+        <AssignCodeModal
+          order={order}
+          onClose={() => setShowAssign(false)}
+          onAssigned={(updated) => {
+            onOrderUpdate(updated);
+            setShowAssign(false);
+          }}
+        />
+      )}
+      {showSend && (
+        <SendCodeModal
+          order={order}
+          onClose={() => setShowSend(false)}
+          onSent={(id) => {
+            onOrderUpdate({ ...order, code_sent_at: new Date().toISOString() });
+            setShowSend(false);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -587,9 +1368,8 @@ export default function AdminOrdersPage() {
   const [selected, setSelected] = useState<Order | null>(null);
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!loading && (!isAuthenticated || user?.role !== "admin"))
       router.push("/auth/login");
-    }
   }, [loading, isAuthenticated, user, router]);
 
   const fetchOrders = useCallback(async () => {
@@ -615,14 +1395,25 @@ export default function AdminOrdersPage() {
     if (isAuthenticated && user?.role === "admin") fetchOrders();
   }, [isAuthenticated, user, fetchOrders]);
 
-  // Optimistically update status in local state after approval/rejection
   function handleStatusChange(id: number, status: string) {
     setOrders((prev) =>
       prev.map((o) => (o.id === id ? { ...o, payment_status: status } : o)),
     );
+    setSelected((prev) =>
+      prev?.id === id ? { ...prev, payment_status: status } : prev,
+    );
   }
 
-  if (loading) {
+  function handleOrderUpdate(updated: Order) {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)),
+    );
+    setSelected((prev) =>
+      prev?.id === updated.id ? { ...prev, ...updated } : prev,
+    );
+  }
+
+  if (loading)
     return (
       <main style={{ minHeight: "100vh" }}>
         <div
@@ -639,16 +1430,21 @@ export default function AdminOrdersPage() {
         </div>
       </main>
     );
-  }
-
   if (!isAuthenticated || user?.role !== "admin") return null;
 
-  // Counts
   const pendingReviewCount = orders.filter(
     (o) => o.payment_status === "pending_review",
   ).length;
-  const completedCount = orders.filter((o) =>
-    ["paid"].includes(o.payment_status),
+  const needsCodeCount = orders.filter(
+    (o) =>
+      ["paid", "confirmed", "completed"].includes(o.payment_status) &&
+      !o.esim_code,
+  ).length;
+  const unsentCount = orders.filter(
+    (o) =>
+      ["paid", "confirmed", "completed"].includes(o.payment_status) &&
+      o.esim_code &&
+      !o.code_sent_at,
   ).length;
   const todayCount = orders.filter(
     (o) => new Date(o.created_at).toDateString() === new Date().toDateString(),
@@ -672,13 +1468,17 @@ export default function AdminOrdersPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;600;700&display=swap');
         .order-row:hover td { background: #F5F7FF; }
-        .filter-pill { border-radius: 999px; padding: 5px 14px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; border: 1px solid #E2E8F4; background: #FFFFFF; color: #6B7A99; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+        .filter-pill { border-radius: 999px; padding: 5px 14px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; border: 1px solid #E2E8F4; background: #FFFFFF; color: #6B7A99; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
         .filter-pill:hover:not(.active) { border-color: #C7D2FE; color: #3B5BDB; background: #F5F7FF; }
         .filter-pill.active { border-color: #3B5BDB; background: #3B5BDB; color: #FFFFFF; }
         .icon-btn { padding: 6px 8px; border-radius: 6px; border: 1px solid #D1D9E6; background: #FFFFFF; color: #6B7A99; cursor: pointer; font-size: 13px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
         .icon-btn:hover { border-color: #3B5BDB; color: #3B5BDB; background: #EEF2FF; }
         .approve-quick { padding: 4px 10px; border-radius: 5px; border: 1px solid #BBF7D0; background: #F0FDF4; color: #16A34A; font-size: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
         .approve-quick:hover { background: #16A34A; color: #FFFFFF; border-color: #16A34A; }
+        .assign-quick { padding: 4px 10px; border-radius: 5px; border: 1px solid #DDD6FE; background: #F5F3FF; color: #7C3AED; font-size: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
+        .assign-quick:hover { background: #7C3AED; color: #FFFFFF; border-color: #7C3AED; }
+        .send-quick { padding: 4px 10px; border-radius: 5px; border: 1px solid #BBF7D0; background: #FFFFFF; color: #16A34A; font-size: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
+        .send-quick:hover { background: #16A34A; color: #FFFFFF; border-color: #16A34A; }
         .refresh-btn { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 7px; border: 1px solid #D1D9E6; background: #FFFFFF; color: #6B7A99; font-size: 11px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; transition: all .15s; }
         .refresh-btn:hover { border-color: #C7D2FE; color: #3B5BDB; background: #F5F7FF; }
         input:focus { border-color: #3B5BDB !important; box-shadow: 0 0 0 3px rgba(59,91,219,0.1) !important; outline: none; }
@@ -689,7 +1489,7 @@ export default function AdminOrdersPage() {
 
       <main style={{ minHeight: "100vh", background: "#F8FAFF" }}>
         <section style={{ padding: "32px 24px" }}>
-          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             {/* ── Page Header ── */}
             <div
               style={{
@@ -759,18 +1559,25 @@ export default function AdminOrdersPage() {
                     color: "#3B5BDB",
                   },
                   {
-                    count: completedCount,
-                    label: "Paid",
-                    bg: "#F0FDF4",
-                    border: "#BBF7D0",
-                    color: "#16A34A",
+                    count: needsCodeCount,
+                    label: "Needs Code",
+                    bg: "#F5F3FF",
+                    border: "#DDD6FE",
+                    color: "#7C3AED",
+                  },
+                  {
+                    count: unsentCount,
+                    label: "Unsent Codes",
+                    bg: "#FFFBEB",
+                    border: "#FDE68A",
+                    color: "#92400E",
                   },
                   {
                     count: todayCount,
                     label: "Today",
-                    bg: "#F5F3FF",
-                    border: "#DDD6FE",
-                    color: "#7C3AED",
+                    bg: "#F0FDF4",
+                    border: "#BBF7D0",
+                    color: "#16A34A",
                   },
                 ].map((s) => (
                   <div
@@ -859,12 +1666,10 @@ export default function AdminOrdersPage() {
                       color: "#1A2540",
                       fontSize: 13,
                       fontFamily: SORA,
-                      transition: "border-color 0.15s",
                       boxSizing: "border-box",
                     }}
                   />
                 </div>
-
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {FILTER_BUTTONS.map((f) => (
                     <button
@@ -895,13 +1700,11 @@ export default function AdminOrdersPage() {
                     </button>
                   ))}
                 </div>
-
                 <button className="refresh-btn" onClick={fetchOrders}>
                   ↺ Refresh
                 </button>
               </div>
 
-              {/* Error banner */}
               {error && (
                 <div
                   style={{
@@ -935,6 +1738,7 @@ export default function AdminOrdersPage() {
                         "Customer",
                         "Plan",
                         "Method",
+                        "eSIM Code",
                         "Status",
                         "Receipt",
                         "Date",
@@ -964,7 +1768,7 @@ export default function AdminOrdersPage() {
                     {ordersLoading ? (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={9}
                           style={{
                             padding: "48px 0",
                             textAlign: "center",
@@ -979,7 +1783,7 @@ export default function AdminOrdersPage() {
                     ) : filtered.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={9}
                           style={{
                             padding: "48px 0",
                             textAlign: "center",
@@ -1013,7 +1817,14 @@ export default function AdminOrdersPage() {
                           day: "numeric",
                           year: "numeric",
                         });
-                        const showApproveQuick = needsReview(order);
+                        const isApproved = [
+                          "paid",
+                          "confirmed",
+                          "completed",
+                        ].includes(order.payment_status);
+                        const needsCode = isApproved && !order.esim_code;
+                        const hasCodeUnsent =
+                          isApproved && order.esim_code && !order.code_sent_at;
 
                         return (
                           <tr
@@ -1033,7 +1844,6 @@ export default function AdminOrdersPage() {
                             >
                               {order.reference ?? "#" + order.id}
                             </td>
-
                             {/* Customer */}
                             <td style={{ padding: "12px 16px" }}>
                               <div
@@ -1056,7 +1866,6 @@ export default function AdminOrdersPage() {
                                 {order.user?.email ?? ""}
                               </div>
                             </td>
-
                             {/* Plan */}
                             <td style={{ padding: "12px 16px" }}>
                               <div
@@ -1079,7 +1888,6 @@ export default function AdminOrdersPage() {
                                 {planData}
                               </div>
                             </td>
-
                             {/* Method */}
                             <td style={{ padding: "12px 16px" }}>
                               <div
@@ -1089,10 +1897,7 @@ export default function AdminOrdersPage() {
                                   gap: 5,
                                 }}
                               >
-                                <span
-                                  style={{ fontSize: 16 }}
-                                  title={method.label}
-                                >
+                                <span style={{ fontSize: 16 }}>
                                   {method.icon}
                                 </span>
                                 <span
@@ -1105,14 +1910,18 @@ export default function AdminOrdersPage() {
                                   {method.label}
                                 </span>
                               </div>
-                              <PaymentTypePill method={order.payment_method} />
                             </td>
-
+                            {/* eSIM Code — new column */}
+                            <td style={{ padding: "12px 16px" }}>
+                              <EsimCodeBadge
+                                code={order.esim_code}
+                                sent={order.code_sent_at}
+                              />
+                            </td>
                             {/* Status */}
                             <td style={{ padding: "12px 16px" }}>
                               <StatusPill status={order.payment_status} />
                             </td>
-
                             {/* Receipt */}
                             <td
                               style={{
@@ -1150,7 +1959,6 @@ export default function AdminOrdersPage() {
                                 </span>
                               )}
                             </td>
-
                             {/* Date */}
                             <td
                               style={{
@@ -1163,23 +1971,40 @@ export default function AdminOrdersPage() {
                             >
                               {date}
                             </td>
-
                             {/* Actions */}
                             <td style={{ padding: "12px 16px" }}>
                               <div
                                 style={{
                                   display: "flex",
-                                  gap: 6,
+                                  gap: 5,
                                   alignItems: "center",
                                 }}
                               >
-                                {showApproveQuick && (
+                                {needsReview(order) && (
                                   <button
                                     className="approve-quick"
                                     onClick={() => setSelected(order)}
                                     title="Review & approve"
                                   >
                                     Review
+                                  </button>
+                                )}
+                                {needsCode && (
+                                  <button
+                                    className="assign-quick"
+                                    onClick={() => setSelected(order)}
+                                    title="Assign eSIM code"
+                                  >
+                                    + Code
+                                  </button>
+                                )}
+                                {hasCodeUnsent && (
+                                  <button
+                                    className="send-quick"
+                                    onClick={() => setSelected(order)}
+                                    title="Send code to customer"
+                                  >
+                                    ✉ Send
                                   </button>
                                 )}
                                 <button
@@ -1225,6 +2050,7 @@ export default function AdminOrdersPage() {
           order={selected}
           onClose={() => setSelected(null)}
           onStatusChange={handleStatusChange}
+          onOrderUpdate={handleOrderUpdate}
         />
       )}
     </>

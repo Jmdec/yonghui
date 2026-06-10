@@ -15,19 +15,22 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ orderId: string }> },
 ) {
-  const { id } = await params;
+  const { orderId } = await params;
 
   try {
     const body = await req.json();
 
-    const res = await fetch(`${LARAVEL_API}/api/admin/orders/${id}/status`, {
-      method: "PATCH",
-      headers: await getAuthHeaders(),
-      body: JSON.stringify(body),
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${LARAVEL_API}/api/admin/orders/${orderId}/status`,
+      {
+        method: "PATCH",
+        headers: await getAuthHeaders(),
+        body: JSON.stringify(body),
+        cache: "no-store",
+      },
+    );
 
     if (res.status === 401) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -48,7 +51,7 @@ export async function PATCH(
 
     return NextResponse.json(data);
   } catch (err) {
-    console.error("[admin/orders/[id]/status PATCH]", err);
+    console.error("[admin/orders/[orderId]/status PATCH]", err);
     return NextResponse.json(
       { error: "Server error. Could not reach Laravel API." },
       { status: 500 },

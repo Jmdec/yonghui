@@ -1,7 +1,7 @@
 import Sidebar from "@/components/admin/sidebar";
 
 export const metadata = {
-  title: "Admin — YourHub",
+  title: "Admin — YH",
 };
 
 export default function AdminLayout({
