@@ -323,7 +323,7 @@ function Hero() {
         }}
       >
         {[
-          { value: "200+", label: "Countries Covered" },
+          { value: "190+", label: "Countries Covered" },
           { value: "10K+", label: "Happy Travelers" },
           { value: "99.9%", label: "Uptime" },
           { value: "24/7", label: "Support" },
@@ -511,7 +511,7 @@ function SignalBars({ visible }: { visible: boolean }) {
 // Animated carrier profile download
 function ProfileDownload({ visible }: { visible: boolean }) {
   const profiles = [
-    { name: "YH Global 5G", region: "200+ countries", color: "#0072FF" },
+    { name: "YH Global 5G", region: "190+ countries", color: "#0072FF" },
     { name: "Asia Unlimited", region: "32 countries", color: "#0099dd" },
     { name: "Europe Plus", region: "48 countries", color: "#00aaff" },
   ];
@@ -1281,7 +1281,7 @@ function Coverage() {
               marginBottom: 10,
             }}
           >
-            200+ countries, one account
+            190+ countries, one account
           </h2>
           <p
             style={{
@@ -1448,7 +1448,7 @@ function Mission() {
     {
       icon: "🎯",
       title: "Mission",
-      desc: "Eliminate the friction of international travel by providing instant, reliable, and affordable eSIM connectivity to travelers in 200+ countries — starting from the moment they book a trip.",
+      desc: "Eliminate the friction of international travel by providing instant, reliable, and affordable eSIM connectivity to travelers in 190+ countries — starting from the moment they book a trip.",
     },
     {
       icon: "👁️",
@@ -1570,7 +1570,7 @@ const TIMELINE = [
   {
     year: "2023",
     title: "10,000 travelers",
-    desc: "YH ESIM surpasses 10K active users. 24/7 live support launched. Plans now cover 200+ destinations.",
+    desc: "YH ESIM surpasses 10K active users. 24/7 live support launched. Plans now cover 190+ destinations.",
   },
   {
     year: "2024–25",
@@ -1593,7 +1593,7 @@ const WHY = [
   {
     icon: "🌐",
     title: "Global reach",
-    desc: "200+ countries, top-tier carrier partners on every continent.",
+    desc: "190+ countries, top-tier carrier partners on every continent.",
   },
   {
     icon: "🔒",
