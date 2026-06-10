@@ -1,8 +1,99 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+
+const API_IMG = process.env.NEXT_PUBLIC_API_IMG ?? "";
+
+interface Destination {
+  id: number;
+  name: string;
+  slug: string;
+  flag: string;
+  retail_price?: number | null;
+  price?: string | null;
+  image?: string | null;
+}
+
+function formatPrice(d: Destination): string {
+  if (d.retail_price != null)
+    return `From ${Number(d.retail_price).toFixed(2)} USD`;
+  if (d.price) return `From ${d.price}`;
+  return "From 2.99 USD";
+}
+
+function imgSrc(path?: string | null) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_IMG}/${path}`;
+}
+
+const POPULAR_TAGS = [
+  { flag: "🇯🇵", label: "Japan", slug: "japan" },
+  { flag: "🇦🇪", label: "UAE", slug: "united-arab-emirates" },
+  { flag: "🇬🇧", label: "UK", slug: "uk" },
+  { flag: "🇸🇬", label: "Singapore", slug: "singapore" },
+  { flag: "🇺🇸", label: "USA", slug: "usa" },
+  { flag: "🇫🇷", label: "France", slug: "france" },
+  { flag: "🇩🇪", label: "Germany", slug: "germany" },
+  { flag: "🇹🇭", label: "Thailand", slug: "thailand" },
+];
+
 export default function HeroSection() {
+  const router = useRouter();
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Destination[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [totalCountries, setTotalCountries] = useState(0);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/destinations/active")
+      .then((r) => r.json())
+      .then((d) => {
+        const data: Destination[] = d.data ?? [];
+        setDestinations(data);
+        setTotalCountries(data.length);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const q = query.toLowerCase();
+    const filtered = destinations
+      .filter((d) => d.name.toLowerCase().includes(q))
+      .slice(0, 6);
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }, [query, destinations]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    const match = destinations.find((d) =>
+      d.name.toLowerCase().includes(query.toLowerCase()),
+    );
+    if (match) router.push(`/destinations/${match.slug}`);
+    else router.push(`/destinations?search=${encodeURIComponent(query)}`);
+  };
+
   const stats = [
-    { n: "190", em: "+", l: "Countries" },
+    { n: totalCountries || "190", em: "+", l: "Countries" },
     { n: "95", em: "K", l: "Reviews" },
     { n: "4G", em: "/5G", l: "Network" },
     { n: "24", em: "/7", l: "Support" },
@@ -11,405 +102,361 @@ export default function HeroSection() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap');
-        @keyframes chipblink {
-          0%, 100% { border-color: rgba(14,99,214,0.35); }
-          50%       { border-color: rgba(14,99,214,0.7); box-shadow: 0 0 8px rgba(14,99,214,0.12); }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700;800;900&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .yh-hero {
+          font-family: 'DM Sans', sans-serif;
+          width: 100%;
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
-        @keyframes dotpulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.2; }
+        .yh-bg {
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(to bottom, rgba(8,14,36,0.58) 0%, rgba(8,14,36,0.28) 40%, rgba(8,14,36,0.75) 100%),
+            url('https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1800&q=80&fit=crop') center/cover no-repeat;
         }
-        @keyframes underlinepulse {
-          0%, 100% { opacity: 0.5; transform: scaleX(0.8); }
-          50%       { opacity: 1; transform: scaleX(1); }
+        .yh-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 100%);
+          pointer-events: none;
         }
-        @keyframes orbitSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes chiplineflicker {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
+        .yh-content {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          max-width: 860px;
+          padding: 0 40px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
-        @keyframes siglabelfloat {
-          0%, 100% { transform: translateY(0); opacity: 0.7; }
-          50%       { transform: translateY(-4px); opacity: 1; }
+        .yh-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.22);
+          backdrop-filter: blur(12px);
+          border-radius: 999px;
+          padding: 7px 20px;
+          margin-bottom: 28px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.13em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.9);
         }
-        .yh-cyan-underline::after {
-          content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
-          height: 2px; background: rgba(14,99,214,0.5);
-          animation: underlinepulse 2s ease-in-out infinite;
-          transform-origin: left;
+        .yh-badge-dot {
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: #4da6ff;
+          flex-shrink: 0;
+          box-shadow: 0 0 6px #4da6ff;
+        }
+        .yh-h1 {
+          font-size: clamp(3rem, 7.5vw, 5.8rem);
+          font-weight: 900;
+          line-height: 1.02;
+          letter-spacing: -0.03em;
+          color: #ffffff;
+          margin-bottom: 20px;
+        }
+        .yh-h1 em {
+          font-style: normal;
+          background: linear-gradient(90deg, #4da6ff 0%, #a78bfa 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .yh-sub {
+          font-size: clamp(1rem, 2vw, 1.15rem);
+          color: rgba(255,255,255,0.68);
+          line-height: 1.7;
+          max-width: 520px;
+          margin-bottom: 40px;
+          font-weight: 400;
+        }
+
+        /* Search */
+        .yh-search-outer {
+          position: relative;
+          width: 100%;
+          max-width: 620px;
+          margin-bottom: 18px;
+        }
+        .yh-search-wrap {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          background: rgba(255,255,255,0.97);
+          border: 1.5px solid rgba(255,255,255,0.5);
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.28);
+          transition: box-shadow 0.2s;
         }
         .yh-search-wrap:focus-within {
-          border-color: rgba(14,99,214,0.6) !important;
-          box-shadow: 0 0 0 3px rgba(14,99,214,0.08) !important;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.28), 0 0 0 3px rgba(77,166,255,0.4);
         }
-        .yh-search-btn:hover { opacity: 0.85 !important; }
-        @media (max-width: 720px) {
-          .yh-hero-grid { grid-template-columns: 1fr !important; padding: 36px 0 28px !important; }
-          .yh-hero-right { display: none !important; }
+        .yh-search-icon {
+          padding: 0 16px;
+          font-size: 17px;
+          color: #9aa3b2;
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+        }
+        .yh-search-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          outline: none;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 15px;
+          color: #1a1f2e;
+          padding: 16px 0;
+        }
+        .yh-search-input::placeholder { color: #9aa3b2; }
+        .yh-search-btn {
+          background: #0057d9;
+          border: none;
+          color: #fff;
+          padding: 16px 28px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          white-space: nowrap;
+          transition: background 0.2s;
+          margin: 5px;
+          border-radius: 12px;
+        }
+        .yh-search-btn:hover { background: #0044bb; }
+
+        /* Suggestions */
+        .yh-suggestions {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0; right: 0;
+          background: #0f1f3d;
+          border: 1px solid #1a3a5a;
+          border-radius: 14px;
+          box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+          overflow: hidden;
+          z-index: 100;
+        }
+        .yh-suggestion-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 20px;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+          color: #e8f0ff;
+          font-weight: 600;
+          border-bottom: 1px solid #1a3a5a;
+          transition: background 0.12s;
+        }
+        .yh-suggestion-item:last-child { border-bottom: none; }
+        .yh-suggestion-item:hover { background: rgba(0,102,255,0.15); color: #4da6ff; }
+        .yh-suggestion-flag { font-size: 22px; width: 32px; text-align: center; }
+        .yh-suggestion-flag-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .yh-suggestion-price { margin-left: auto; font-size: 12px; color: #7f94b8; font-weight: 500; }
+
+        /* Tags */
+        .yh-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 80px;
+          max-width: 620px;
+          width: 100%;
+        }
+        .yh-tags-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.45);
+        }
+        .yh-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.18);
+          backdrop-filter: blur(8px);
+          border-radius: 999px;
+          padding: 6px 14px;
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.82);
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .yh-tag:hover { background: rgba(0,102,255,0.25); border-color: rgba(77,166,255,0.5); color: #fff; }
+
+        /* Stats bar */
+        .yh-stats {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(10,22,40,0.7);
+          backdrop-filter: blur(20px);
+          border-top: 1px solid rgba(255,255,255,0.10);
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          z-index: 3;
+        }
+        .yh-stat-item {
+          flex: 1;
+          text-align: center;
+          padding: 22px 12px;
+          border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .yh-stat-item:last-child { border-right: none; }
+        .yh-stat-num {
+          font-size: 1.8rem;
+          font-weight: 900;
+          color: #ffffff;
+          line-height: 1;
+          letter-spacing: -0.02em;
+        }
+        .yh-stat-em { color: #4da6ff; }
+        .yh-stat-label {
+          font-size: 0.65rem;
+          color: rgba(255,255,255,0.4);
+          margin-top: 5px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        @media (max-width: 640px) {
+          .yh-content { padding: 0 24px; }
+          .yh-h1 { font-size: 2.6rem; }
+          .yh-stat-num { font-size: 1.4rem; }
+          .yh-stat-item { padding: 16px 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation: none !important; transition: none !important; }
         }
       `}</style>
 
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "0 24px",
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
-        <div
-          className="yh-hero-grid"
-          style={{
-            padding: "56px 0 40px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 40,
-            alignItems: "center",
-          }}
-        >
-          {/* ── LEFT ── */}
-          <div>
-            {/* Badge chip */}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                border: "1px solid rgba(14,99,214,0.35)",
-                borderRadius: 4,
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 10,
-                color: "#0D6EFD",
-                marginBottom: 18,
-                background: "rgba(14,99,214,0.07)",
-                animation: "chipblink 2s ease-in-out infinite",
-              }}
-            >
-              <span
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  background: "#0D6EFD",
-                  animation: "dotpulse 1.4s ease-in-out infinite",
-                }}
-              />
-              GLOBAL eSIM NETWORK · 190+ COUNTRIES
-            </div>
+      <section className="yh-hero">
+        <div className="yh-bg" />
+        <div className="yh-vignette" />
 
-            {/* H1 */}
-            <h1
-              style={{
-                fontFamily: "'Sora', sans-serif",
-                fontWeight: 800,
-                fontSize: "clamp(30px, 4.5vw, 46px)",
-                lineHeight: 1.08,
-                color: "#0a2540",
-                marginBottom: 14,
-                letterSpacing: "-0.5px",
-              }}
-            >
-              Stay Connected
-              <br />
-              Anywhere with
-              <br />
-              <span
-                className="yh-cyan-underline"
-                style={{ color: "#0D6EFD", position: "relative" }}
-              >
-                YH
-              </span>
-            </h1>
+        <div className="yh-content">
+          <div className="yh-badge">
+            <span className="yh-badge-dot" />
+            Global eSIM Network · {totalCountries > 0 ? totalCountries : "190"}+
+            Countries
+          </div>
 
-            {/* Subtitle */}
-            <p
-              style={{
-                fontSize: 13.5,
-                color: "#4a6580",
-                lineHeight: 1.7,
-                marginBottom: 24,
-                maxWidth: 380,
-              }}
-            >
-              Instant digital eSIM activation. No roaming fees, no physical
-              cards — pure seamless connectivity from the moment you land.
-            </p>
+          <h1 className="yh-h1">
+            Travel the World,
+            <br />
+            Stay <em>Connected</em>
+          </h1>
 
-            {/* Search bar */}
-            <div
-              className="yh-search-wrap"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                background: "rgba(255,255,255,0.75)",
-                border: "1px solid rgba(14,99,214,0.25)",
-                borderRadius: 8,
-                overflow: "hidden",
-                marginBottom: 20,
-                transition: "border-color 0.2s, box-shadow 0.2s",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <div
-                style={{
-                  padding: "0 12px",
-                  color: "#4a80c4",
-                  fontSize: 15,
-                  display: "flex",
-                }}
-              >
-                <i className="ti ti-map-pin" aria-hidden="true" />
-              </div>
+          <p className="yh-sub">
+            Instant eSIM for every traveller. No roaming fees, no SIM swaps —
+            just seamless connectivity the moment you land.
+          </p>
+
+          <div className="yh-search-outer" ref={searchRef}>
+            <div className="yh-search-wrap">
+              <div className="yh-search-icon">🔍</div>
               <input
-                placeholder="Search destination or country..."
-                style={{
-                  flex: 1,
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  color: "#0a2540",
-                  padding: "11px 0",
-                }}
+                className="yh-search-input"
+                placeholder="Where are you headed?"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                onFocus={() =>
+                  suggestions.length > 0 && setShowSuggestions(true)
+                }
               />
-              <button
-                className="yh-search-btn"
-                style={{
-                  background: "linear-gradient(135deg, #0D6EFD, #0090FF)",
-                  border: "none",
-                  color: "#fff",
-                  padding: "11px 18px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
-                  whiteSpace: "nowrap",
-                  transition: "opacity 0.2s",
-                }}
-              >
-                Find Plans
+              <button className="yh-search-btn" onClick={handleSearch}>
+                Find Plans →
               </button>
             </div>
 
-            {/* Stats row */}
-            <div
-              style={{
-                display: "flex",
-                border: "1px solid rgba(14,99,214,0.15)",
-                borderRadius: 8,
-                overflow: "hidden",
-                background: "rgba(255,255,255,0.5)",
-              }}
-            >
-              {stats.map((s, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: 1,
-                    padding: "10px 14px",
-                    textAlign: "center",
-                    borderRight:
-                      i < stats.length - 1
-                        ? "1px solid rgba(14,99,214,0.1)"
-                        : "none",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontWeight: 700,
-                      fontSize: 18,
-                      color: "#0a2540",
-                    }}
-                  >
-                    {s.n}
-                    <em style={{ color: "#0D6EFD", fontStyle: "normal" }}>
-                      {s.em}
-                    </em>
-                  </div>
-                  <div style={{ fontSize: 10, color: "#6a8aaa", marginTop: 2 }}>
-                    {s.l}
-                  </div>
-                </div>
-              ))}
-            </div>
+            {showSuggestions && (
+              <div className="yh-suggestions">
+                {suggestions.map((d) => {
+                  const src = imgSrc(d.image);
+                  return (
+                    <div
+                      key={d.slug}
+                      className="yh-suggestion-item"
+                      onMouseDown={() => {
+                        router.push(`/destinations/${d.slug}`);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <span className="yh-suggestion-flag">
+                        {src ? (
+                          <img
+                            src={src}
+                            alt={d.name}
+                            className="yh-suggestion-flag-img"
+                          />
+                        ) : (
+                          d.flag
+                        )}
+                      </span>
+                      <span>{d.name}</span>
+                      <span className="yh-suggestion-price">
+                        {formatPrice(d)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* ── RIGHT: eSIM Visual ── */}
-          <div
-            className="yh-hero-right"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div style={{ position: "relative", width: 260, height: 260 }}>
-              {/* Orbit rings */}
-              {[
-                {
-                  size: 220,
-                  border: "1px solid rgba(14,99,214,0.18)",
-                  dur: "12s",
-                  dir: "normal",
-                  dotSize: 6,
-                  dotColor: "#1d6fd8",
-                },
-                {
-                  size: 170,
-                  border: "1px dashed rgba(14,99,214,0.15)",
-                  dur: "8s",
-                  dir: "reverse",
-                  dotSize: 5,
-                  dotColor: "#0090FF",
-                },
-                {
-                  size: 125,
-                  border: "1px solid rgba(14,99,214,0.22)",
-                  dur: "5s",
-                  dir: "normal",
-                  dotSize: 6,
-                  dotColor: "#1d6fd8",
-                },
-              ].map((o, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    borderRadius: "50%",
-                    width: o.size,
-                    height: o.size,
-                    border: o.border,
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    animation: `orbitSpin ${o.dur} linear infinite${o.dir === "reverse" ? " reverse" : ""}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      borderRadius: "50%",
-                      width: o.dotSize,
-                      height: o.dotSize,
-                      background: o.dotColor,
-                      top: -o.dotSize / 2,
-                      left: "50%",
-                      marginLeft: -o.dotSize / 2,
-                      boxShadow: `0 0 6px ${o.dotColor}88`,
-                    }}
-                  />
-                </div>
-              ))}
-
-              {/* Center chip card */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: 84,
-                  height: 60,
-                  background:
-                    "linear-gradient(135deg, #1a4a8a 0%, #0d3060 100%)",
-                  border: "1px solid rgba(14,99,214,0.5)",
-                  borderRadius: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "column",
-                  gap: 6,
-                  boxShadow: "0 4px 24px rgba(14,99,214,0.2)",
-                }}
+          <div className="yh-tags">
+            <span className="yh-tags-label">Popular:</span>
+            {POPULAR_TAGS.map((t) => (
+              <button
+                key={t.label}
+                className="yh-tag"
+                onClick={() => router.push(`/destinations/${t.slug}`)}
               >
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 3 }}
-                >
-                  {[40, 30, 35].map((w, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        height: 2,
-                        width: w,
-                        background: "rgba(147,197,253,0.7)",
-                        borderRadius: 1,
-                        animation: `chiplineflicker ${[2.1, 1.8, 2.4][i]}s ease-in-out ${[0, 0.3, 0.7][i]}s infinite`,
-                      }}
-                    />
-                  ))}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 9,
-                    color: "rgba(147,197,253,0.9)",
-                    letterSpacing: 1,
-                  }}
-                >
-                  eSIM
-                </div>
-              </div>
-
-              {/* Signal labels */}
-              {[
-                {
-                  label: "5G · ACTIVE",
-                  top: 10,
-                  right: 10,
-                  left: "auto" as const,
-                  dur: "3.2s",
-                  del: "0s",
-                },
-                {
-                  label: "190+ NETS",
-                  bottom: 20,
-                  left: 0,
-                  right: "auto" as const,
-                  dur: "2.8s",
-                  del: "1s",
-                },
-                {
-                  label: "4G/LTE",
-                  top: "50%",
-                  right: -10,
-                  left: "auto" as const,
-                  dur: "3.6s",
-                  del: "0.5s",
-                },
-              ].map((sig, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 9,
-                    color: "#1d6fd8",
-                    background: "rgba(219,234,254,0.85)",
-                    border: "1px solid rgba(14,99,214,0.25)",
-                    padding: "3px 7px",
-                    borderRadius: 3,
-                    animation: `siglabelfloat ${sig.dur} ease-in-out ${sig.del} infinite`,
-                    whiteSpace: "nowrap",
-                    top: (sig as any).top,
-                    right: sig.right,
-                    left: sig.left,
-                    ...((sig as any).bottom !== undefined
-                      ? { bottom: (sig as any).bottom, top: "auto" }
-                      : {}),
-                  }}
-                >
-                  {sig.label}
-                </div>
-              ))}
-            </div>
+                {t.flag} {t.label}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+
+        <div className="yh-stats">
+          {stats.map((s, i) => (
+            <div key={i} className="yh-stat-item">
+              <div className="yh-stat-num">
+                {s.n}
+                <span className="yh-stat-em">{s.em}</span>
+              </div>
+              <div className="yh-stat-label">{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </section>
     </>
   );
 }

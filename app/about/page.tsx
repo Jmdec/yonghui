@@ -45,39 +45,20 @@ function Background() {
         zIndex: 0,
         pointerEvents: "none",
         overflow: "hidden",
-        background:
-          "linear-gradient(160deg, #dff2ff 0%, #c8e8ff 30%, #b0d8ff 60%, #c4eeff 100%)",
+        background: "#f7f4ef",
       }}
     >
       <style>{`
         @keyframes float-blob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
-        @keyframes scan-line  { 0%{top:-4px} 100%{top:100%} }
-        @keyframes flow-dash  { 0%{stroke-dashoffset:200} 100%{stroke-dashoffset:0} }
-        @keyframes signal-pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
         @keyframes blink-dot  { 0%,100%{opacity:1} 50%{opacity:.3} }
         @keyframes grow-bar   { from{width:0} to{width:var(--w)} }
-        @keyframes flow-fill  { from{width:0} to{width:100%} }
         @keyframes fade-up    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes btn-pulse  { 0%,100%{box-shadow:0 6px 24px rgba(0,114,255,.3)} 50%{box-shadow:0 6px 36px rgba(0,180,255,.5)} }
-        @keyframes orbit      { from{transform:rotate(0deg) translateX(68px) rotate(0deg)} to{transform:rotate(360deg) translateX(68px) rotate(-360deg)} }
-        @keyframes orbit2     { from{transform:rotate(120deg) translateX(72px) rotate(-120deg)} to{transform:rotate(480deg) translateX(72px) rotate(-480deg)} }
-        @keyframes orbit3     { from{transform:rotate(240deg) translateX(60px) rotate(-240deg)} to{transform:rotate(600deg) translateX(60px) rotate(-600deg)} }
-        @keyframes chip-glow  { 0%,100%{box-shadow:0 0 0 0 rgba(0,114,255,0)} 50%{box-shadow:0 0 20px 6px rgba(0,114,255,.25)} }
-        @keyframes data-packet{ 0%{left:-8px;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{left:calc(100% + 8px);opacity:0} }
-        @keyframes bar-stream { 0%{transform:scaleX(0);transform-origin:left} 40%{transform:scaleX(1);transform-origin:left} 41%{transform:scaleX(1);transform-origin:right} 100%{transform:scaleX(0);transform-origin:right} }
-        @keyframes count-up   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes ping-ring  { 0%{transform:scale(1);opacity:.8} 100%{transform:scale(2.2);opacity:0} }
-        @keyframes signal-bar1{ 0%,100%{height:4px} 50%{height:10px} }
-        @keyframes signal-bar2{ 0%,100%{height:8px} 50%{height:18px} }
-        @keyframes signal-bar3{ 0%,100%{height:14px} 50%{height:26px} }
-        @keyframes signal-bar4{ 0%,100%{height:20px} 50%{height:32px} }
-        @keyframes profile-slide{ from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes lock-unlock { 0%,40%{transform:rotate(-8deg)} 50%,100%{transform:rotate(0deg)} }
-        @keyframes wave-pulse  { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.5);opacity:0} }
+        @keyframes btn-pulse  { 0%,100%{box-shadow:0 6px 24px rgba(0,87,217,.25)} 50%{box-shadow:0 6px 36px rgba(0,87,217,.4)} }
         @media (prefers-reduced-motion: reduce) {
           *{ animation: none !important; transition: none !important; }
         }
       `}</style>
+      {/* Subtle warm blobs */}
       <div
         style={{
           position: "absolute",
@@ -87,7 +68,7 @@ function Background() {
           width: 1100,
           height: 650,
           background:
-            "radial-gradient(ellipse, rgba(0,160,255,.18) 0%, transparent 65%)",
+            "radial-gradient(ellipse, rgba(0,87,217,.06) 0%, transparent 65%)",
         }}
       />
       <div
@@ -98,7 +79,7 @@ function Background() {
           width: 520,
           height: 520,
           background:
-            "radial-gradient(ellipse, rgba(0,120,255,.1) 0%, transparent 70%)",
+            "radial-gradient(ellipse, rgba(0,87,217,.05) 0%, transparent 70%)",
           animation: "float-blob 7s ease-in-out infinite",
         }}
       />
@@ -110,10 +91,11 @@ function Background() {
           width: 480,
           height: 420,
           background:
-            "radial-gradient(ellipse, rgba(0,200,255,.12) 0%, transparent 70%)",
+            "radial-gradient(ellipse, rgba(0,87,217,.04) 0%, transparent 70%)",
           animation: "float-blob 9s ease-in-out infinite 2s",
         }}
       />
+      {/* Subtle grid */}
       <svg
         style={{
           position: "absolute",
@@ -133,46 +115,14 @@ function Background() {
             <path
               d="M 60 0 L 0 0 0 60"
               fill="none"
-              stroke="#0080FF"
+              stroke="#0057d9"
               strokeWidth="0.5"
-              opacity="0.08"
+              opacity="0.05"
             />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
-        {[
-          "M 80 120 L 80 220 L 200 220 L 200 320",
-          "M 300 80 L 420 80 L 420 180 L 560 180",
-          "M 700 200 L 700 340 L 820 340",
-          "M 900 100 L 1020 100 L 1020 260 L 1160 260",
-        ].map((d, i) => (
-          <path
-            key={i}
-            d={d}
-            fill="none"
-            stroke="#0072FF"
-            strokeWidth="1.2"
-            opacity="0.13"
-            strokeDasharray="200"
-            strokeDashoffset="200"
-            style={{
-              animation: `flow-dash ${2.5 + i * 0.4}s linear infinite ${i * 0.3}s`,
-            }}
-          />
-        ))}
       </svg>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          height: 3,
-          background:
-            "linear-gradient(90deg, transparent, rgba(0,180,255,.22), transparent)",
-          animation: "scan-line 6s linear infinite",
-          zIndex: 1,
-        }}
-      />
     </div>
   );
 }
@@ -183,8 +133,7 @@ const Divider = () => (
   <div
     style={{
       height: 1,
-      background:
-        "linear-gradient(90deg, transparent, rgba(0,140,255,.28), transparent)",
+      background: "#e2e6ef",
       position: "relative",
       zIndex: 2,
     }}
@@ -200,7 +149,7 @@ const Label = ({ text }: { text: string }) => (
       fontWeight: 700,
       letterSpacing: "0.13em",
       textTransform: "uppercase",
-      color: "#0072FF",
+      color: "#0057d9",
       marginBottom: 10,
     }}
   >
@@ -227,8 +176,8 @@ function Hero() {
           display: "inline-flex",
           alignItems: "center",
           gap: 8,
-          background: "rgba(0,114,255,.1)",
-          border: "1px solid rgba(0,114,255,.28)",
+          background: "#e8f0fd",
+          border: "1px solid #c5d9fb",
           borderRadius: 999,
           padding: "6px 18px",
           marginBottom: 28,
@@ -239,7 +188,7 @@ function Hero() {
             width: 6,
             height: 6,
             borderRadius: "50%",
-            background: "#0090FF",
+            background: "#0057d9",
             display: "inline-block",
             animation: "blink-dot 1.6s ease-in-out infinite",
           }}
@@ -250,7 +199,7 @@ function Hero() {
             fontWeight: 700,
             letterSpacing: "0.13em",
             textTransform: "uppercase",
-            color: "#0055cc",
+            color: "#0057d9",
           }}
         >
           About YH ESIM
@@ -263,14 +212,14 @@ function Hero() {
           fontSize: "clamp(2.2rem,5vw,3.6rem)",
           fontWeight: 800,
           lineHeight: 1.1,
-          color: "#002f6c",
+          color: "#1a1f2e",
           margin: "0 0 20px",
           letterSpacing: "-0.025em",
           animation: "fade-up .6s ease both .05s",
         }}
       >
         Connecting the world,{" "}
-        <span style={{ color: "#0072FF", whiteSpace: "nowrap" }}>
+        <span style={{ color: "#0057d9", whiteSpace: "nowrap" }}>
           one eSIM at a time
         </span>
       </h1>
@@ -278,7 +227,7 @@ function Hero() {
       <p
         style={{
           fontSize: "clamp(.95rem,1.8vw,1.1rem)",
-          color: "#2e6a96",
+          color: "#5a6478",
           lineHeight: 1.8,
           maxWidth: 560,
           marginBottom: 36,
@@ -296,7 +245,7 @@ function Hero() {
           display: "inline-flex",
           alignItems: "center",
           gap: 10,
-          background: "linear-gradient(135deg,#0055ff,#00b8ff)",
+          background: "#0057d9",
           color: "#fff",
           padding: "14px 36px",
           borderRadius: 12,
@@ -318,7 +267,7 @@ function Hero() {
           gap: 12,
           marginTop: 40,
           paddingTop: 32,
-          borderTop: "1px solid rgba(0,140,255,.18)",
+          borderTop: "1px solid #e2e6ef",
           animation: "fade-up .6s ease both .25s",
         }}
       >
@@ -334,7 +283,7 @@ function Hero() {
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "2rem",
                 fontWeight: 800,
-                color: "#0055cc",
+                color: "#0057d9",
                 lineHeight: 1,
               }}
             >
@@ -343,7 +292,7 @@ function Hero() {
             <div
               style={{
                 fontSize: "0.7rem",
-                color: "#4a85b0",
+                color: "#9aa3b2",
                 marginTop: 5,
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -362,309 +311,40 @@ function Hero() {
 // ─── eSIM Technology ──────────────────────────────────────────────────────────
 
 const FLOW_STEPS = [
-  { icon: "🛒", label: "Choose a plan", sub: "Pick country & data size" },
-  { icon: "📧", label: "Get QR code", sub: "Instant email delivery" },
-  { icon: "📷", label: "Scan & install", sub: "Takes under 2 min" },
-  { icon: "✈️", label: "Land & connect", sub: "Auto-connects on arrival" },
-  { icon: "🌐", label: "Travel freely", sub: "Stay online everywhere" },
+  {
+    step: "01",
+    icon: "🛒",
+    label: "Choose a plan",
+    sub: "Pick your destination and data size. Plans start from $1.99.",
+  },
+  {
+    step: "02",
+    icon: "📧",
+    label: "Get your QR code",
+    sub: "Receive it instantly by email — no shipping, no waiting.",
+  },
+  {
+    step: "03",
+    icon: "📷",
+    label: "Scan & install",
+    sub: "Open your phone's camera, scan the QR code. Done in 2 minutes.",
+  },
+  {
+    step: "04",
+    icon: "✈️",
+    label: "Land & connect",
+    sub: "Your eSIM auto-connects the moment you arrive at your destination.",
+  },
+  {
+    step: "05",
+    icon: "🌐",
+    label: "Travel freely",
+    sub: "Browse, call, and navigate without any roaming surprises.",
+  },
 ];
-
-// ─── FIX: Larger orbit radii + wrapper sized to 200×200 ───────────────────────
-function ChipDiagram({ visible }: { visible: boolean }) {
-  return (
-    <div
-      style={{ position: "relative", width: 200, height: 200, flexShrink: 0 }}
-    >
-      {/* Ping rings */}
-      {[0, 1].map((i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            border: "1.5px solid rgba(0,114,255,.4)",
-            animation: visible
-              ? `ping-ring 2s ease-out infinite ${i * 1}s`
-              : "none",
-          }}
-        />
-      ))}
-      {/* Chip body */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%,-50%)",
-          width: 64,
-          height: 64,
-          background: "linear-gradient(135deg, #0044cc, #0088ff)",
-          borderRadius: 10,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          animation: visible ? "chip-glow 2.5s ease-in-out infinite" : "none",
-          zIndex: 2,
-        }}
-      >
-        <svg width="64" height="64" style={{ position: "absolute", inset: 0 }}>
-          {[16, 32, 48].map((x) => (
-            <line
-              key={`v${x}`}
-              x1={x}
-              y1="8"
-              x2={x}
-              y2="56"
-              stroke="rgba(255,255,255,.15)"
-              strokeWidth="0.8"
-            />
-          ))}
-          {[16, 32, 48].map((y) => (
-            <line
-              key={`h${y}`}
-              x1="8"
-              y1={y}
-              x2="56"
-              y2={y}
-              stroke="rgba(255,255,255,.15)"
-              strokeWidth="0.8"
-            />
-          ))}
-        </svg>
-        <span style={{ fontSize: "1.5rem", zIndex: 1 }}>📡</span>
-      </div>
-
-      {/* FIX: Orbiting nodes with larger translateX so they clear the chip */}
-      {[
-        { label: "5G", anim: "orbit", color: "#0072FF" },
-        { label: "LTE", anim: "orbit2", color: "#00b8ff" },
-        { label: "AES", anim: "orbit3", color: "#0055cc" },
-      ].map((node) => (
-        <div
-          key={node.label}
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: 32,
-            height: 32,
-            marginTop: -16,
-            marginLeft: -16,
-            animation: visible ? `${node.anim} 4s linear infinite` : "none",
-          }}
-        >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: node.color,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.55rem",
-              fontWeight: 800,
-              color: "#fff",
-              boxShadow: `0 2px 8px ${node.color}88`,
-            }}
-          >
-            {node.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Animated signal strength bars
-function SignalBars({ visible }: { visible: boolean }) {
-  return (
-    <div
-      style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 36 }}
-    >
-      {[
-        { h: 8, anim: "signal-bar1", delay: "0s" },
-        { h: 16, anim: "signal-bar2", delay: ".12s" },
-        { h: 24, anim: "signal-bar3", delay: ".24s" },
-        { h: 32, anim: "signal-bar4", delay: ".36s" },
-      ].map((b, i) => (
-        <div
-          key={i}
-          style={{
-            width: 7,
-            height: b.h,
-            borderRadius: 3,
-            background: "linear-gradient(180deg,#00C8FF,#0072FF)",
-            opacity: visible ? 1 : 0.2,
-            animation: visible
-              ? `${b.anim} 1.4s ease-in-out infinite ${b.delay}`
-              : "none",
-            transition: "opacity .4s ease",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// Animated carrier profile download
-function ProfileDownload({ visible }: { visible: boolean }) {
-  const profiles = [
-    { name: "YH Global 5G", region: "190+ countries", color: "#0072FF" },
-    { name: "Asia Unlimited", region: "32 countries", color: "#0099dd" },
-    { name: "Europe Plus", region: "48 countries", color: "#00aaff" },
-  ];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {profiles.map((p, i) => (
-        <div
-          key={p.name}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "10px 14px",
-            background: "rgba(255,255,255,.7)",
-            border: "1px solid rgba(0,140,255,.18)",
-            borderRadius: 10,
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateX(0)" : "translateX(-16px)",
-            transition: `opacity .45s ease ${0.2 + i * 0.15}s, transform .45s ease ${0.2 + i * 0.15}s`,
-            animation: visible
-              ? `profile-slide .45s ease forwards ${0.2 + i * 0.15}s`
-              : "none",
-          }}
-        >
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: p.color,
-              boxShadow: `0 0 6px ${p.color}`,
-              animation: visible ? "blink-dot 2s ease-in-out infinite" : "none",
-              animationDelay: `${i * 0.4}s`,
-            }}
-          />
-          <div style={{ flex: 1 }}>
-            <div
-              style={{ fontSize: "0.8rem", fontWeight: 700, color: "#002f6c" }}
-            >
-              {p.name}
-            </div>
-            <div style={{ fontSize: "0.7rem", color: "#4a85b0" }}>
-              {p.region}
-            </div>
-          </div>
-          {/* Animated download bar */}
-          <div
-            style={{
-              width: 60,
-              height: 4,
-              background: "rgba(0,114,255,.12)",
-              borderRadius: 2,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                borderRadius: 2,
-                background: `linear-gradient(90deg, ${p.color}, #00C8FF)`,
-                animation: visible
-                  ? `bar-stream 2.2s ease-in-out infinite ${i * 0.5}s`
-                  : "none",
-              }}
-            />
-          </div>
-          <span
-            style={{
-              fontSize: "0.65rem",
-              fontWeight: 700,
-              color: "#1a7a40",
-              background: "rgba(0,180,60,.1)",
-              padding: "2px 7px",
-              borderRadius: 999,
-            }}
-          >
-            OTA
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Live data packet animation on a "wire"
-function DataWire({ visible, label }: { visible: boolean; label: string }) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        height: 20,
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          height: 2,
-          background: "rgba(0,114,255,.15)",
-          borderRadius: 1,
-        }}
-      />
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            top: "50%",
-            marginTop: -4,
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#0072FF",
-            boxShadow: "0 0 8px rgba(0,114,255,.6)",
-            animation: visible
-              ? `data-packet 2.4s linear infinite ${i * 0.8}s`
-              : "none",
-          }}
-        />
-      ))}
-      <span
-        style={{
-          position: "absolute",
-          right: 0,
-          fontSize: "0.65rem",
-          color: "#4a85b0",
-          background: "rgba(255,255,255,.8)",
-          padding: "1px 6px",
-          borderRadius: 999,
-          border: "1px solid rgba(0,114,255,.15)",
-        }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
 
 function EsimTech() {
   const { ref, visible } = useFadeIn();
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    if (!visible) return;
-    const id = setInterval(
-      () => setActiveStep((s) => (s + 1) % FLOW_STEPS.length),
-      1800,
-    );
-    return () => clearInterval(id);
-  }, [visible]);
 
   return (
     <section
@@ -684,7 +364,7 @@ function EsimTech() {
           fontFamily: "'DM Sans', sans-serif",
           fontSize: "clamp(1.5rem,3vw,2.2rem)",
           fontWeight: 800,
-          color: "#002f6c",
+          color: "#1a1f2e",
           marginBottom: 10,
         }}
       >
@@ -693,162 +373,64 @@ function EsimTech() {
       <p
         style={{
           fontSize: "0.95rem",
-          color: "#3d6e90",
+          color: "#5a6478",
           lineHeight: 1.75,
           maxWidth: 580,
           marginBottom: 36,
         }}
       >
-        An eSIM (embedded SIM) is a programmable chip built directly into your
-        device. Instead of swapping physical cards, you download a carrier
-        profile over the air in seconds — then you're connected.
+        An eSIM is a digital SIM built into your phone. Instead of buying a
+        plastic card, you download a plan in seconds — and you're connected.
+        That's it.
       </p>
 
-      {/* ── Row 1: Chip diagram + OTA Profile download (2 cols, network panel removed) ── */}
+      {/* Quick benefit pills */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "auto 1fr",
-          gap: 20,
-          marginBottom: 20,
-          alignItems: "stretch",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 36,
         }}
       >
-        {/* FIX: overflow:visible so orbiting nodes are never clipped */}
-        <div
-          style={{
-            background: "rgba(255,255,255,.68)",
-            border: "1px solid rgba(0,140,255,.2)",
-            borderRadius: 20,
-            padding: "28px 24px",
-            backdropFilter: "blur(10px)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 16,
-            minWidth: 220,
-            overflow: "visible",
-          }}
-        >
-          <ChipDiagram visible={visible} />
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 700,
-                color: "#002f6c",
-                marginBottom: 4,
-              }}
-            >
-              Embedded SIM chip
-            </div>
-            <div
-              style={{
-                fontSize: "0.7rem",
-                color: "#4a85b0",
-                lineHeight: 1.5,
-                maxWidth: 140,
-              }}
-            >
-              Soldered directly onto your device's motherboard — no slot needed
-            </div>
-          </div>
-          {/* Signal bars */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <SignalBars visible={visible} />
-            <span
-              style={{ fontSize: "0.7rem", color: "#0072FF", fontWeight: 700 }}
-            >
-              5G Live
-            </span>
-          </div>
-          {/* Data wires */}
+        {[
+          { icon: "⚡", text: "Instant activation" },
+          { icon: "🔒", text: "AES-256 encrypted" },
+          { icon: "📶", text: "5G & LTE ready" },
+          { icon: "🌍", text: "190+ countries" },
+          { icon: "♻️", text: "Zero plastic" },
+        ].map((pill) => (
           <div
+            key={pill.text}
             style={{
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              background: "#ffffff",
+              border: "1px solid #e2e6ef",
+              borderRadius: 999,
+              padding: "8px 16px",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              color: "#1a1f2e",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             }}
           >
-            <DataWire visible={visible} label="Encrypt" />
-            <DataWire visible={visible} label="Transmit" />
+            <span>{pill.icon}</span>
+            {pill.text}
           </div>
-        </div>
-
-        {/* OTA Profile download panel */}
-        <div
-          style={{
-            background: "rgba(255,255,255,.68)",
-            border: "1px solid rgba(0,140,255,.2)",
-            borderRadius: 20,
-            padding: "24px 22px",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "0.7rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              color: "#4a85b0",
-              marginBottom: 6,
-            }}
-          >
-            Over-the-air profile install
-          </div>
-          <div
-            style={{
-              fontSize: "0.88rem",
-              fontWeight: 700,
-              color: "#002f6c",
-              marginBottom: 14,
-            }}
-          >
-            Carrier profiles download in seconds
-          </div>
-          <ProfileDownload visible={visible} />
-          <div
-            style={{
-              marginTop: 16,
-              padding: "10px 14px",
-              background: "rgba(0,114,255,.06)",
-              border: "1px solid rgba(0,114,255,.15)",
-              borderRadius: 10,
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.72rem",
-                color: "#0055cc",
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              🔒 GSMA SGP.22 RSP — end-to-end encrypted
-            </div>
-            <div
-              style={{ fontSize: "0.7rem", color: "#3d6e90", lineHeight: 1.55 }}
-            >
-              Every profile transfer is protected with AES-256 encryption. Your
-              identity is cryptographically verified before any profile
-              activates.
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* ── Row 2: Animated how-it-works flow ── */}
+      {/* How it works — steps */}
       <div
         style={{
-          background: "rgba(255,255,255,.68)",
-          border: "1px solid rgba(0,140,255,.2)",
+          background: "#ffffff",
+          border: "1px solid #e2e6ef",
           borderRadius: 20,
-          padding: "28px 24px",
-          backdropFilter: "blur(10px)",
+          padding: "32px 28px",
           marginBottom: 20,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
         }}
       >
         <div
@@ -857,133 +439,102 @@ function EsimTech() {
             fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: "0.1em",
-            color: "#4a85b0",
-            marginBottom: 20,
+            color: "#9aa3b2",
+            marginBottom: 24,
           }}
         >
-          How it works — 5 steps
+          How it works — 5 simple steps
         </div>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr auto 1fr auto 1fr auto 1fr auto 1fr",
-            alignItems: "center",
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gap: 16,
+            position: "relative",
           }}
         >
+          {/* Connector line */}
+          <div
+            style={{
+              position: "absolute",
+              top: 28,
+              left: "10%",
+              right: "10%",
+              height: 2,
+              background: "#e8f0fd",
+              zIndex: 0,
+            }}
+          />
           {FLOW_STEPS.map((step, i) => (
-            <>
+            <div
+              key={step.label}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                gap: 12,
+                position: "relative",
+                zIndex: 1,
+                opacity: visible ? 1 : 0,
+                transform: visible ? "translateY(0)" : "translateY(12px)",
+                transition: `opacity .5s ease ${i * 0.1}s, transform .5s ease ${i * 0.1}s`,
+              }}
+            >
               <div
-                key={step.label}
                 style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  background: "#e8f0fd",
+                  border: "2px solid #c5d9fb",
                   display: "flex",
-                  flexDirection: "column",
                   alignItems: "center",
-                  textAlign: "center",
-                  gap: 8,
+                  justifyContent: "center",
+                  fontSize: "1.6rem",
                 }}
               >
+                {step.icon}
+              </div>
+              <div>
                 <div
                   style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: "50%",
-                    background:
-                      activeStep === i
-                        ? "rgba(0,114,255,.18)"
-                        : "rgba(0,114,255,.08)",
-                    border:
-                      activeStep === i
-                        ? "2px solid rgba(0,114,255,.7)"
-                        : "1.5px solid rgba(0,114,255,.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.5rem",
-                    transform: activeStep === i ? "scale(1.12)" : "scale(1)",
-                    transition: "all .35s ease",
-                    boxShadow:
-                      activeStep === i
-                        ? "0 0 18px rgba(0,114,255,.25)"
-                        : "none",
-                    opacity: visible ? 1 : 0,
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    color: "#0057d9",
+                    letterSpacing: "0.09em",
+                    marginBottom: 3,
                   }}
                 >
-                  {step.icon}
+                  STEP {step.step}
                 </div>
                 <div
                   style={{
-                    fontSize: "0.78rem",
+                    fontSize: "0.82rem",
                     fontWeight: 700,
-                    color: activeStep === i ? "#0055cc" : "#002f6c",
+                    color: "#1a1f2e",
+                    marginBottom: 5,
                     lineHeight: 1.3,
-                    maxWidth: 80,
-                    transition: "color .35s ease",
                   }}
                 >
                   {step.label}
                 </div>
                 <div
                   style={{
-                    fontSize: "0.7rem",
-                    color: "#4a85b0",
-                    maxWidth: 80,
-                    lineHeight: 1.35,
+                    fontSize: "0.74rem",
+                    color: "#5a6478",
+                    lineHeight: 1.55,
                   }}
                 >
                   {step.sub}
                 </div>
               </div>
-              {i < FLOW_STEPS.length - 1 && (
-                <div
-                  key={`arrow-${i}`}
-                  style={{
-                    padding: "0 6px 28px",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 2,
-                      background: "rgba(0,114,255,.15)",
-                      borderRadius: 2,
-                      overflow: "hidden",
-                      position: "relative",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        background: "#0072FF",
-                        width: 0,
-                        animation: visible
-                          ? `flow-fill .7s ease forwards ${0.25 + i * 0.12}s`
-                          : "none",
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: -3,
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: "#0072FF",
-                        animation: visible
-                          ? `data-packet 2s linear infinite ${i * 0.4}s`
-                          : "none",
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* ── Row 3: Comparison + Tech specs ── */}
+      {/* Comparison + OTA panel */}
       <div
         style={{
           display: "grid",
@@ -995,11 +546,11 @@ function EsimTech() {
         {/* Physical SIM */}
         <div
           style={{
-            background: "rgba(255,255,255,.55)",
-            border: "1px solid rgba(0,140,255,.15)",
+            background: "#ffffff",
+            border: "1px solid #e2e6ef",
             borderRadius: 18,
             padding: "24px 22px",
-            backdropFilter: "blur(8px)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
           }}
         >
           <div
@@ -1015,7 +566,7 @@ function EsimTech() {
               style={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
-                color: "#002f6c",
+                color: "#1a1f2e",
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -1035,13 +586,13 @@ function EsimTech() {
                 display: "flex",
                 gap: 9,
                 padding: "6px 0",
-                borderTop: "1px solid rgba(0,140,255,.1)",
+                borderTop: "1px solid #f0f2f7",
                 fontSize: "0.82rem",
-                color: "#5a7a96",
+                color: "#5a6478",
                 lineHeight: 1.5,
               }}
             >
-              <span style={{ color: "#cc4444", flexShrink: 0 }}>✕</span>
+              <span style={{ color: "#e03030", flexShrink: 0 }}>✕</span>
               {t}
             </div>
           ))}
@@ -1050,13 +601,13 @@ function EsimTech() {
         {/* eSIM */}
         <div
           style={{
-            background: "rgba(0,114,255,.07)",
-            border: "1.5px solid rgba(0,114,255,.35)",
+            background: "#ffffff",
+            border: "2px solid #0057d9",
             borderRadius: 18,
             padding: "24px 22px",
-            backdropFilter: "blur(8px)",
             position: "relative",
             overflow: "hidden",
+            boxShadow: "0 2px 16px rgba(0,87,217,.08)",
           }}
         >
           <div
@@ -1066,7 +617,7 @@ function EsimTech() {
               left: 0,
               right: 0,
               height: 3,
-              background: "linear-gradient(90deg,#0072FF,#00C8FF)",
+              background: "#0057d9",
               borderRadius: "18px 18px 0 0",
             }}
           />
@@ -1083,7 +634,7 @@ function EsimTech() {
               style={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
-                color: "#002f6c",
+                color: "#1a1f2e",
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -1096,8 +647,8 @@ function EsimTech() {
                 fontWeight: 700,
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.08em",
-                background: "rgba(0,180,60,.12)",
-                color: "#1a7a40",
+                background: "#edfaf4",
+                color: "#00a86b",
                 padding: "3px 9px",
                 borderRadius: 999,
               }}
@@ -1118,13 +669,13 @@ function EsimTech() {
                 display: "flex",
                 gap: 9,
                 padding: "6px 0",
-                borderTop: "1px solid rgba(0,114,255,.12)",
+                borderTop: "1px solid #f0f2f7",
                 fontSize: "0.82rem",
-                color: "#1a4a7a",
+                color: "#1a1f2e",
                 lineHeight: 1.5,
               }}
             >
-              <span style={{ color: "#1a7a40", flexShrink: 0 }}>✓</span>
+              <span style={{ color: "#00a86b", flexShrink: 0 }}>✓</span>
               {t}
             </div>
           ))}
@@ -1159,11 +710,11 @@ function EsimTech() {
           <div
             key={c.badge}
             style={{
-              background: "rgba(255,255,255,.65)",
-              border: "1px solid rgba(0,140,255,.18)",
+              background: "#ffffff",
+              border: "1px solid #e2e6ef",
               borderRadius: 16,
               padding: "20px",
-              backdropFilter: "blur(8px)",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
               opacity: visible ? 1 : 0,
               transform: visible ? "translateY(0)" : "translateY(14px)",
               transition: `opacity .5s ease ${0.1 + i * 0.1}s, transform .5s ease ${0.1 + i * 0.1}s`,
@@ -1174,7 +725,7 @@ function EsimTech() {
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "1.4rem",
                 fontWeight: 800,
-                color: "#0055cc",
+                color: "#0057d9",
                 marginBottom: 2,
               }}
             >
@@ -1186,7 +737,7 @@ function EsimTech() {
                 fontWeight: 700,
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.09em",
-                color: "#4a85b0",
+                color: "#9aa3b2",
                 marginBottom: 10,
               }}
             >
@@ -1195,7 +746,7 @@ function EsimTech() {
             <p
               style={{
                 fontSize: "0.82rem",
-                color: "#3d6e90",
+                color: "#5a6478",
                 lineHeight: 1.65,
                 margin: 0,
               }}
@@ -1277,7 +828,7 @@ function Coverage() {
               fontFamily: "'DM Sans', sans-serif",
               fontSize: "clamp(1.4rem,2.5vw,2rem)",
               fontWeight: 800,
-              color: "#002f6c",
+              color: "#1a1f2e",
               marginBottom: 10,
             }}
           >
@@ -1286,7 +837,7 @@ function Coverage() {
           <p
             style={{
               fontSize: "0.88rem",
-              color: "#3d6e90",
+              color: "#5a6478",
               lineHeight: 1.75,
               marginBottom: 20,
             }}
@@ -1297,14 +848,14 @@ function Coverage() {
           </p>
           <div
             style={{
-              background: "rgba(255,255,255,.65)",
-              border: "1px solid rgba(0,140,255,.18)",
+              background: "#ffffff",
+              border: "1px solid #e2e6ef",
               borderRadius: 16,
               padding: "18px 20px",
-              backdropFilter: "blur(8px)",
               display: "flex",
               flexDirection: "column",
               gap: 12,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
             }}
           >
             {REGIONS.map((r, i) => (
@@ -1315,7 +866,7 @@ function Coverage() {
                 <span
                   style={{
                     fontSize: "0.78rem",
-                    color: "#3d6e90",
+                    color: "#5a6478",
                     minWidth: 108,
                     fontWeight: 500,
                   }}
@@ -1327,7 +878,7 @@ function Coverage() {
                     flex: 1,
                     height: 6,
                     borderRadius: 4,
-                    background: "rgba(0,114,255,.12)",
+                    background: "#e8f0fd",
                     overflow: "hidden",
                   }}
                 >
@@ -1335,7 +886,7 @@ function Coverage() {
                     style={{
                       height: "100%",
                       borderRadius: 4,
-                      background: "linear-gradient(90deg,#0072FF,#00C8FF)",
+                      background: "#0057d9",
                       width: 0,
                       ...(visible
                         ? {
@@ -1350,7 +901,7 @@ function Coverage() {
                   style={{
                     fontSize: "0.78rem",
                     fontWeight: 700,
-                    color: "#0055cc",
+                    color: "#0057d9",
                     minWidth: 32,
                     textAlign: "right",
                   }}
@@ -1370,7 +921,7 @@ function Coverage() {
               fontFamily: "'DM Sans', sans-serif",
               fontSize: "clamp(1.4rem,2.5vw,2rem)",
               fontWeight: 800,
-              color: "#002f6c",
+              color: "#1a1f2e",
               marginBottom: 10,
             }}
           >
@@ -1379,7 +930,7 @@ function Coverage() {
           <p
             style={{
               fontSize: "0.88rem",
-              color: "#3d6e90",
+              color: "#5a6478",
               lineHeight: 1.75,
               marginBottom: 20,
             }}
@@ -1397,19 +948,19 @@ function Coverage() {
                   alignItems: "center",
                   gap: 12,
                   padding: "12px 16px",
-                  background: "rgba(255,255,255,.65)",
-                  border: "1px solid rgba(0,140,255,.15)",
+                  background: "#ffffff",
+                  border: "1px solid #e2e6ef",
                   borderRadius: 12,
-                  backdropFilter: "blur(8px)",
                   fontSize: "0.85rem",
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.03)",
                 }}
               >
                 <span style={{ fontSize: "1.3rem", flexShrink: 0 }}>📱</span>
                 <div>
-                  <div style={{ fontWeight: 700, color: "#002f6c" }}>
+                  <div style={{ fontWeight: 700, color: "#1a1f2e" }}>
                     {d.name}
                   </div>
-                  <div style={{ fontSize: "0.75rem", color: "#4a85b0" }}>
+                  <div style={{ fontSize: "0.75rem", color: "#9aa3b2" }}>
                     {d.detail}
                   </div>
                 </div>
@@ -1422,10 +973,8 @@ function Coverage() {
                     letterSpacing: "0.07em",
                     padding: "3px 10px",
                     borderRadius: 999,
-                    background: d.ok
-                      ? "rgba(0,180,60,.12)"
-                      : "rgba(200,150,0,.12)",
-                    color: d.ok ? "#1a7a40" : "#8a6000",
+                    background: d.ok ? "#edfaf4" : "#fef9e7",
+                    color: d.ok ? "#00a86b" : "#8a6000",
                     flexShrink: 0,
                   }}
                 >
@@ -1479,7 +1028,7 @@ function Mission() {
           fontFamily: "'DM Sans', sans-serif",
           fontSize: "clamp(1.5rem,3vw,2.2rem)",
           fontWeight: 800,
-          color: "#002f6c",
+          color: "#1a1f2e",
           marginBottom: 36,
         }}
       >
@@ -1496,12 +1045,11 @@ function Mission() {
           <div
             key={c.title}
             style={{
-              background: "rgba(255,255,255,.68)",
-              border: "1px solid rgba(0,140,255,.2)",
+              background: "#ffffff",
+              border: "1px solid #e2e6ef",
               borderRadius: 20,
               padding: "32px 26px",
-              backdropFilter: "blur(10px)",
-              boxShadow: "0 4px 20px rgba(0,80,200,.07)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.05)",
               position: "relative",
               overflow: "hidden",
               opacity: visible ? 1 : 0,
@@ -1516,7 +1064,7 @@ function Mission() {
                 left: 0,
                 right: 0,
                 height: 3,
-                background: `linear-gradient(90deg, hsl(${210 + i * 15},100%,50%), hsl(${220 + i * 15},100%,65%))`,
+                background: `hsl(${215 + i * 12}, 85%, ${50 + i * 5}%)`,
                 borderRadius: "20px 20px 0 0",
               }}
             />
@@ -1526,7 +1074,7 @@ function Mission() {
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "1.05rem",
                 fontWeight: 700,
-                color: "#002f6c",
+                color: "#1a1f2e",
                 marginBottom: 10,
               }}
             >
@@ -1535,7 +1083,7 @@ function Mission() {
             <p
               style={{
                 fontSize: "0.85rem",
-                color: "#3d6e90",
+                color: "#5a6478",
                 lineHeight: 1.7,
                 margin: 0,
               }}
@@ -1635,7 +1183,7 @@ function StoryAndWhy() {
               fontFamily: "'DM Sans', sans-serif",
               fontSize: "clamp(1.4rem,2.5vw,2rem)",
               fontWeight: 800,
-              color: "#002f6c",
+              color: "#1a1f2e",
               marginBottom: 10,
             }}
           >
@@ -1644,7 +1192,7 @@ function StoryAndWhy() {
           <p
             style={{
               fontSize: "0.87rem",
-              color: "#3d6e90",
+              color: "#5a6478",
               lineHeight: 1.75,
               marginBottom: 24,
             }}
@@ -1660,7 +1208,7 @@ function StoryAndWhy() {
                 top: 0,
                 bottom: 0,
                 width: 1,
-                background: "rgba(0,114,255,.25)",
+                background: "#e2e6ef",
               }}
             />
             {TIMELINE.map((t, i) => (
@@ -1680,15 +1228,15 @@ function StoryAndWhy() {
                     width: 10,
                     height: 10,
                     borderRadius: "50%",
-                    background: "rgba(0,114,255,.15)",
-                    border: "1.5px solid #0072FF",
+                    background: "#e8f0fd",
+                    border: "1.5px solid #0057d9",
                   }}
                 />
                 <div
                   style={{
                     fontSize: "0.68rem",
                     fontWeight: 700,
-                    color: "#0072FF",
+                    color: "#0057d9",
                     textTransform: "uppercase",
                     letterSpacing: "0.09em",
                     marginBottom: 2,
@@ -1700,7 +1248,7 @@ function StoryAndWhy() {
                   style={{
                     fontSize: "0.88rem",
                     fontWeight: 700,
-                    color: "#002f6c",
+                    color: "#1a1f2e",
                     marginBottom: 3,
                   }}
                 >
@@ -1709,7 +1257,7 @@ function StoryAndWhy() {
                 <div
                   style={{
                     fontSize: "0.82rem",
-                    color: "#3d6e90",
+                    color: "#5a6478",
                     lineHeight: 1.65,
                   }}
                 >
@@ -1728,7 +1276,7 @@ function StoryAndWhy() {
               fontFamily: "'DM Sans', sans-serif",
               fontSize: "clamp(1.4rem,2.5vw,2rem)",
               fontWeight: 800,
-              color: "#002f6c",
+              color: "#1a1f2e",
               marginBottom: 10,
             }}
           >
@@ -1737,7 +1285,7 @@ function StoryAndWhy() {
           <p
             style={{
               fontSize: "0.87rem",
-              color: "#3d6e90",
+              color: "#5a6478",
               lineHeight: 1.75,
               marginBottom: 20,
             }}
@@ -1754,11 +1302,11 @@ function StoryAndWhy() {
                 style={{
                   display: "flex",
                   gap: 12,
-                  background: "rgba(255,255,255,.62)",
-                  border: "1px solid rgba(0,140,255,.15)",
+                  background: "#ffffff",
+                  border: "1px solid #e2e6ef",
                   borderRadius: 14,
-                  padding: "16px 16px",
-                  backdropFilter: "blur(8px)",
+                  padding: "16px",
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.03)",
                   opacity: visible ? 1 : 0,
                   transform: visible ? "translateX(0)" : "translateX(-12px)",
                   transition: `opacity .45s ease ${i * 0.07}s, transform .45s ease ${i * 0.07}s`,
@@ -1772,7 +1320,7 @@ function StoryAndWhy() {
                     style={{
                       fontSize: "0.82rem",
                       fontWeight: 700,
-                      color: "#002f6c",
+                      color: "#1a1f2e",
                       marginBottom: 3,
                     }}
                   >
@@ -1781,7 +1329,7 @@ function StoryAndWhy() {
                   <div
                     style={{
                       fontSize: "0.76rem",
-                      color: "#3d6e90",
+                      color: "#5a6478",
                       lineHeight: 1.6,
                     }}
                   >
@@ -1812,16 +1360,13 @@ function CtaBanner() {
     >
       <div
         style={{
-          background:
-            "linear-gradient(135deg, rgba(0,100,255,.12), rgba(0,190,255,.1))",
-          border: "1px solid rgba(0,150,255,.3)",
+          background: "#0057d9",
           borderRadius: 24,
           padding: "56px 40px",
           textAlign: "center",
           position: "relative",
           overflow: "hidden",
-          boxShadow: "0 12px 50px rgba(0,100,255,.1)",
-          backdropFilter: "blur(12px)",
+          boxShadow: "0 12px 50px rgba(0,87,217,.2)",
         }}
       >
         <div
@@ -1833,7 +1378,7 @@ function CtaBanner() {
             width: 600,
             height: 350,
             background:
-              "radial-gradient(ellipse, rgba(0,150,255,.1) 0%, transparent 70%)",
+              "radial-gradient(ellipse, rgba(255,255,255,.08) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
@@ -1842,7 +1387,7 @@ function CtaBanner() {
             fontFamily: "'DM Sans', sans-serif",
             fontSize: "clamp(1.6rem,3.5vw,2.4rem)",
             fontWeight: 800,
-            color: "#002060",
+            color: "#ffffff",
             marginBottom: 12,
           }}
         >
@@ -1850,7 +1395,7 @@ function CtaBanner() {
         </h2>
         <p
           style={{
-            color: "#2e6a96",
+            color: "rgba(255,255,255,0.8)",
             fontSize: "0.97rem",
             lineHeight: 1.75,
             maxWidth: 460,
@@ -1874,8 +1419,8 @@ function CtaBanner() {
               display: "inline-flex",
               alignItems: "center",
               gap: 10,
-              background: "linear-gradient(135deg,#0055ff,#00b8ff)",
-              color: "#fff",
+              background: "#ffffff",
+              color: "#0057d9",
               padding: "14px 36px",
               borderRadius: 12,
               fontSize: "0.97rem",
@@ -1893,15 +1438,15 @@ function CtaBanner() {
               display: "inline-flex",
               alignItems: "center",
               gap: 10,
-              background: "rgba(255,255,255,.7)",
-              color: "#0055cc",
+              background: "rgba(255,255,255,.15)",
+              color: "#ffffff",
               padding: "14px 36px",
               borderRadius: 12,
               fontSize: "0.97rem",
               fontWeight: 700,
               textDecoration: "none",
               fontFamily: "'DM Sans', sans-serif",
-              border: "1px solid rgba(0,140,255,.3)",
+              border: "1px solid rgba(255,255,255,.3)",
             }}
           >
             Contact Us
@@ -1918,8 +1463,7 @@ export default function AboutPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const prev = document.body.style.background;
-    document.body.style.background =
-      "linear-gradient(160deg,#dff2ff 0%,#c8e8ff 30%,#b0d8ff 60%,#c4eeff 100%)";
+    document.body.style.background = "#f7f4ef";
     return () => {
       document.body.style.background = prev;
     };
@@ -1930,7 +1474,7 @@ export default function AboutPage() {
       style={{
         background: "transparent",
         fontFamily: "'DM Sans', sans-serif",
-        color: "#002f6c",
+        color: "#1a1f2e",
         minHeight: "100vh",
         overflowX: "hidden",
       }}

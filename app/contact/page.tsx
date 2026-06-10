@@ -25,91 +25,6 @@ function useFadeIn() {
   return { ref, visible };
 }
 
-function Background() {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-        background:
-          "linear-gradient(160deg,#dff2ff 0%,#c8e8ff 35%,#b0d8ff 65%,#c4eeff 100%)",
-      }}
-    >
-      <style>{`
-        @keyframes float-blob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
-        @keyframes data-flow { 0%{stroke-dashoffset:200} 100%{stroke-dashoffset:0} }
-      `}</style>
-      <div
-        style={{
-          position: "absolute",
-          top: -100,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 1200,
-          height: 600,
-          background:
-            "radial-gradient(ellipse,rgba(0,160,255,0.16) 0%,transparent 65%)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "10%",
-          right: -100,
-          width: 500,
-          height: 500,
-          background:
-            "radial-gradient(ellipse,rgba(0,120,255,0.09) 0%,transparent 70%)",
-          animation: "float-blob 8s ease-in-out infinite",
-        }}
-      />
-      <svg
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-        }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path
-              d="M 60 0 L 0 0 0 60"
-              fill="none"
-              stroke="#0080FF"
-              strokeWidth="0.4"
-              opacity="0.07"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#g)" />
-        {[
-          "M 100 150 L 100 280 L 260 280",
-          "M 400 60 L 560 60 L 560 200",
-          "M 750 180 L 750 360 L 900 360",
-        ].map((d, i) => (
-          <path
-            key={i}
-            d={d}
-            fill="none"
-            stroke="#0072FF"
-            strokeWidth="1"
-            opacity="0.1"
-            strokeDasharray="200"
-            strokeDashoffset="200"
-            style={{
-              animation: `data-flow ${2.8 + i * 0.5}s linear infinite ${i * 0.4}s`,
-            }}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
 function ContactForm() {
   const [form, setForm] = useState({
     full_name: "",
@@ -139,12 +54,11 @@ function ContactForm() {
       const data = await res.json();
       if (!res.ok) {
         if (data.errors) {
-          const messages = Object.values(
-            data.errors as Record<string, string[]>,
-          )
-            .flat()
-            .join(" ");
-          setError(messages);
+          setError(
+            Object.values(data.errors as Record<string, string[]>)
+              .flat()
+              .join(" "),
+          );
         } else {
           setError(data.error ?? "Something went wrong. Please try again.");
         }
@@ -158,51 +72,19 @@ function ContactForm() {
     }
   };
 
-  const F = (field: string): React.CSSProperties => ({
-    width: "100%",
-    background: focused === field ? "#fff" : "rgba(240,248,255,0.85)",
-    border: `1.5px solid ${focused === field ? "#0D6EFD" : "rgba(0,130,255,0.22)"}`,
-    boxShadow: focused === field ? "0 0 0 3px rgba(13,110,253,0.1)" : "none",
-    padding: "11px 14px",
-    fontFamily: "'DM Sans',sans-serif",
-    fontSize: 14,
-    color: "#0a2540",
-    outline: "none",
-    borderRadius: 10,
-    transition: "all 0.18s",
-    boxSizing: "border-box" as const,
-  });
-
-  const L: React.CSSProperties = {
-    display: "block",
-    fontSize: 11.5,
-    fontWeight: 700,
-    color: "#2e6a96",
-    marginBottom: 6,
-    letterSpacing: "0.04em",
-    fontFamily: "'DM Sans',sans-serif",
-  };
+  const inputCls = (f: string) => `ct-input${focused === f ? " focused" : ""}`;
 
   if (submitted)
     return (
-      <div style={{ textAlign: "center", padding: "60px 20px" }}>
-        <div style={{ fontSize: "3rem", marginBottom: 16 }}>✅</div>
-        <h3
-          style={{
-            fontFamily: "'DM Sans',sans-serif",
-            fontWeight: 800,
-            color: "#002f6c",
-            fontSize: "1.4rem",
-            marginBottom: 10,
-          }}
-        >
-          Message sent!
-        </h3>
-        <p style={{ color: "#3d6e90", fontSize: "0.9rem", lineHeight: 1.7 }}>
+      <div style={{ textAlign: "center", padding: "52px 20px" }}>
+        <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>✅</div>
+        <h3 className="ct-success-title">Message sent!</h3>
+        <p className="ct-success-sub">
           Thanks, <strong>{form.full_name}</strong>. We'll reply to{" "}
           <strong>{form.email}</strong> within 2 hours.
         </p>
         <button
+          className="ct-btn"
           onClick={() => {
             setSubmitted(false);
             setForm({
@@ -213,18 +95,6 @@ function ContactForm() {
               message: "",
             });
           }}
-          style={{
-            marginTop: 24,
-            background: "linear-gradient(135deg,#0055ff,#00b8ff)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "12px 28px",
-            fontFamily: "'DM Sans',sans-serif",
-            fontWeight: 700,
-            fontSize: "0.9rem",
-            cursor: "pointer",
-          }}
         >
           Send another
         </button>
@@ -232,83 +102,63 @@ function ContactForm() {
     );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" as const, gap: 16 }}>
-      {error && (
-        <div
-          style={{
-            background: "rgba(220,38,38,0.07)",
-            border: "1px solid rgba(220,38,38,0.25)",
-            borderRadius: 8,
-            padding: "10px 14px",
-            fontSize: "0.84rem",
-            color: "#dc2626",
-          }}
-        >
-          ⚠ {error}
-        </div>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <div>
-          <label style={L}>
-            Full Name <span style={{ color: "#0072FF" }}>*</span>
+    <div className="ct-form-fields">
+      {error && <div className="ct-error">⚠ {error}</div>}
+      <div className="ct-row">
+        <div className="ct-field-wrap">
+          <label className="ct-label">
+            Full Name <span className="ct-req">*</span>
           </label>
           <input
+            className={inputCls("full_name")}
             type="text"
             placeholder="Juan Dela Cruz"
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             onFocus={() => setFocused("full_name")}
             onBlur={() => setFocused(null)}
-            style={F("full_name")}
           />
         </div>
-        <div>
-          <label style={L}>
-            Email <span style={{ color: "#0072FF" }}>*</span>
+        <div className="ct-field-wrap">
+          <label className="ct-label">
+            Email <span className="ct-req">*</span>
           </label>
           <input
+            className={inputCls("email")}
             type="email"
             placeholder="juan@email.com"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             onFocus={() => setFocused("email")}
             onBlur={() => setFocused(null)}
-            style={F("email")}
           />
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <div>
-          <label style={L}>
-            Phone{" "}
-            <span style={{ color: "#7ab5cc", fontWeight: 400 }}>
-              (optional)
-            </span>
+      <div className="ct-row">
+        <div className="ct-field-wrap">
+          <label className="ct-label">
+            Phone <span className="ct-opt">(optional)</span>
           </label>
           <input
+            className={inputCls("phone")}
             type="tel"
             placeholder="+63 9XX XXX XXXX"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             onFocus={() => setFocused("phone")}
             onBlur={() => setFocused(null)}
-            style={F("phone")}
           />
         </div>
-        <div>
-          <label style={L}>
-            Subject <span style={{ color: "#0072FF" }}>*</span>
+        <div className="ct-field-wrap">
+          <label className="ct-label">
+            Subject <span className="ct-req">*</span>
           </label>
           <select
+            className={inputCls("subject") + " ct-select"}
             value={form.subject}
             onChange={(e) => setForm({ ...form, subject: e.target.value })}
             onFocus={() => setFocused("subject")}
             onBlur={() => setFocused(null)}
-            style={{
-              ...F("subject"),
-              appearance: "none" as const,
-              cursor: "pointer",
-            }}
           >
             <option value="">Select a topic…</option>
             <option value="Order / Payment Issue">Order / Payment Issue</option>
@@ -320,55 +170,25 @@ function ContactForm() {
           </select>
         </div>
       </div>
-      <div>
-        <label style={L}>
-          Message <span style={{ color: "#0072FF" }}>*</span>
+      <div className="ct-field-wrap">
+        <label className="ct-label">
+          Message <span className="ct-req">*</span>
         </label>
         <textarea
+          className={inputCls("message") + " ct-textarea"}
           placeholder="Describe your question or issue in detail…"
           value={form.message}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
           onFocus={() => setFocused("message")}
           onBlur={() => setFocused(null)}
           rows={5}
-          style={{
-            ...F("message"),
-            resize: "vertical" as const,
-            minHeight: 120,
-          }}
         />
       </div>
-      <button
-        onClick={handleSubmit}
-        disabled={submitting}
-        style={{
-          width: "100%",
-          padding: "14px",
-          background: submitting
-            ? "rgba(0,100,255,0.45)"
-            : "linear-gradient(135deg,#0055ff 0%,#00b8ff 100%)",
-          color: "#fff",
-          border: "none",
-          borderRadius: 10,
-          fontFamily: "'DM Sans',sans-serif",
-          fontSize: "0.95rem",
-          fontWeight: 700,
-          cursor: submitting ? "not-allowed" : "pointer",
-          boxShadow: submitting ? "none" : "0 6px 24px rgba(0,85,255,0.32)",
-          transition: "all 0.2s",
-          letterSpacing: "0.01em",
-        }}
-      >
-        {submitting ? "Sending…" : "Send Message →"}
+      <button className="ct-btn" disabled={submitting} onClick={handleSubmit}>
+        <span>{submitting ? "Sending…" : "Send Message"}</span>
+        <span className="ct-btn-arrow">→</span>
       </button>
-      <p
-        style={{
-          textAlign: "center",
-          fontSize: "0.73rem",
-          color: "#94bdd4",
-          margin: 0,
-        }}
-      >
+      <p className="ct-privacy">
         🔒 Your information is kept private and never shared.
       </p>
     </div>
@@ -396,77 +216,23 @@ function Faq() {
     },
   ];
   return (
-    <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {faqs.map((f, i) => (
-        <div
-          key={i}
-          style={{
-            background:
-              open === i ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.55)",
-            border: `1px solid ${open === i ? "rgba(0,114,255,0.3)" : "rgba(0,114,255,0.14)"}`,
-            borderRadius: 12,
-            overflow: "hidden",
-            transition: "all 0.22s",
-            boxShadow: open === i ? "0 4px 16px rgba(0,80,200,0.08)" : "none",
-          }}
-        >
+        <div key={i} className={`faq-item${open === i ? " open" : ""}`}>
           <button
+            className="faq-btn"
             onClick={() => setOpen(open === i ? null : i)}
-            style={{
-              width: "100%",
-              background: "none",
-              border: "none",
-              padding: "16px 20px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              cursor: "pointer",
-              gap: 12,
-              textAlign: "left" as const,
-            }}
           >
+            <span className="faq-q">{f.q}</span>
             <span
-              style={{
-                color: "#002f6c",
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                lineHeight: 1.4,
-                fontFamily: "'DM Sans',sans-serif",
-              }}
-            >
-              {f.q}
-            </span>
-            <span
-              style={{
-                color: "#0072FF",
-                fontSize: "1.25rem",
-                flexShrink: 0,
-                transform: open === i ? "rotate(45deg)" : "rotate(0)",
-                transition: "transform 0.22s",
-                lineHeight: 1,
-              }}
+              className="faq-icon"
+              style={{ transform: open === i ? "rotate(45deg)" : "rotate(0)" }}
             >
               +
             </span>
           </button>
-          <div
-            style={{
-              maxHeight: open === i ? 160 : 0,
-              overflow: "hidden",
-              transition: "max-height 0.3s ease",
-            }}
-          >
-            <p
-              style={{
-                color: "#3d6e90",
-                fontSize: "0.86rem",
-                lineHeight: 1.75,
-                padding: "0 20px 16px",
-                margin: 0,
-              }}
-            >
-              {f.a}
-            </p>
+          <div className="faq-body" style={{ maxHeight: open === i ? 160 : 0 }}>
+            <p className="faq-ans">{f.a}</p>
           </div>
         </div>
       ))}
@@ -477,15 +243,6 @@ function Faq() {
 export default function ContactPage() {
   const { ref: topRef, visible: topVis } = useFadeIn();
   const { ref: faqRef, visible: faqVis } = useFadeIn();
-
-  useEffect(() => {
-    const prev = document.body.style.background;
-    document.body.style.background =
-      "linear-gradient(160deg,#dff2ff 0%,#c8e8ff 35%,#b0d8ff 65%,#c4eeff 100%)";
-    return () => {
-      document.body.style.background = prev;
-    };
-  }, []);
 
   const channels = [
     {
@@ -519,259 +276,330 @@ export default function ContactPage() {
   ];
 
   return (
-    <main
-      style={{
-        background: "transparent",
-        fontFamily: "'DM Sans',sans-serif",
-        color: "#002f6c",
-        minHeight: "100vh",
-        overflowX: "hidden",
-      }}
-    >
+    <main className="ct-page">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes ping { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(2.2);opacity:0} }
+
+        .ct-page {
+          min-height: 100vh;
+          background: #f5f5f0;
+          font-family: 'Sora', sans-serif;
+          color: #0a2540;
+        }
+
+        /* ── Status bar ── */
+        .ct-statusbar {
+          background: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 8px 32px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; color: #b0bccf; letter-spacing: 1.5px;
+        }
+        .ct-statusbar-live { display: flex; align-items: center; gap: 8px; color: #1d6fd8; font-weight: 500; }
+        .ct-ping { position: relative; display: inline-flex; width: 7px; height: 7px; flex-shrink: 0; }
+        .ct-ping-ring { position: absolute; inset: 0; border-radius: 50%; background: #1d6fd8; opacity: 0.4; animation: ping 1.6s ease-out infinite; }
+        .ct-ping-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: #1d6fd8; }
+
+        /* ── Hero ── */
+        .ct-hero {
+          background: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
+          padding: 28px 32px 22px;
+        }
+        .ct-eyebrow {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; color: #1d6fd8;
+          letter-spacing: 2.5px; text-transform: uppercase;
+          margin-bottom: 10px;
+        }
+        .ct-eyebrow-line { display: inline-block; width: 14px; height: 1px; background: #1d6fd8; }
+        .ct-hero-title {
+          font-family: 'Sora', sans-serif;
+          font-size: clamp(24px, 3.5vw, 38px);
+          font-weight: 800; color: #0a2540;
+          line-height: 1.1; letter-spacing: -0.5px; margin: 0 0 8px;
+        }
+        .ct-hero-sub { font-size: 13px; color: #b0bccf; margin: 0; max-width: 520px; line-height: 1.65; }
+
+        /* ── Body ── */
+        .ct-body {
+          max-width: 1080px; margin: 0 auto;
+          padding: 28px 32px 0;
+        }
+        @media (max-width: 768px) { .ct-body { padding: 20px 16px 0; } }
+
+        .ct-fade {
+          transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+
+        /* ── Channel strip ── */
+        .ct-channels {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+        @media (max-width: 860px) { .ct-channels { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .ct-channels { grid-template-columns: 1fr; } }
+
+        .ct-channel {
+          display: block; text-decoration: none;
+          background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;
+          padding: 16px 16px 14px;
+          transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+        }
+        .ct-channel:hover { border-color: rgba(29,111,216,0.3); box-shadow: 0 6px 20px rgba(29,111,216,0.08); transform: translateY(-2px); }
+        .ct-channel-icon { font-size: 22px; margin-bottom: 10px; line-height: 1; }
+        .ct-channel-label {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 8px; font-weight: 500; color: #b0bccf;
+          letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;
+        }
+        .ct-channel-value { font-size: 12px; font-weight: 700; color: #1d6fd8; margin-bottom: 2px; }
+        .ct-channel-note { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #b0bccf; letter-spacing: 0.3px; }
+
+        /* ── Main grid ── */
+        .ct-main-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.55fr;
+          gap: 20px; align-items: start;
+          margin-bottom: 0;
+        }
+        @media (max-width: 768px) { .ct-main-grid { grid-template-columns: 1fr; } }
+
+        /* ── Panel ── */
+        .ct-panel {
+          background: #ffffff; border: 1px solid #e2e8f0;
+          border-radius: 16px; overflow: hidden;
+        }
+        .ct-panel + .ct-panel { margin-top: 14px; }
+        .ct-panel-head {
+          padding: 14px 20px; border-bottom: 1px solid #e2e8f0;
+        }
+        .ct-panel-title {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; font-weight: 500; color: #1d6fd8;
+          letter-spacing: 2px; text-transform: uppercase;
+        }
+        .ct-panel-body { padding: 20px; }
+
+        /* ── Trust items ── */
+        .ct-trust-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f5f5f0; }
+        .ct-trust-item:last-child { border-bottom: none; }
+        .ct-trust-icon {
+          width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+          background: #f0f4fb; border: 1px solid #d4dfee;
+          display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+        .ct-trust-title { font-size: 12px; font-weight: 700; color: #0a2540; margin-bottom: 1px; }
+        .ct-trust-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #b0bccf; letter-spacing: 0.3px; }
+
+        /* ── Response badge ── */
+        .ct-response-badge {
+          background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;
+          padding: 14px 18px; display: flex; align-items: center; gap: 14px;
+          margin-top: 14px;
+        }
+        .ct-response-icon {
+          width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+          background: #eef3fb; border: 1px solid #d4dfee;
+          display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+        .ct-response-label { font-size: 12px; font-weight: 700; color: #0a2540; margin-bottom: 2px; }
+        .ct-response-val { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #1d6fd8; font-weight: 500; letter-spacing: 0.5px; }
+
+        /* ── Form panel ── */
+        .ct-form-panel {
+          background: #ffffff; border: 1px solid #e2e8f0;
+          border-radius: 16px; overflow: hidden;
+        }
+        .ct-form-panel-head {
+          padding: 16px 22px; border-bottom: 1px solid #e2e8f0;
+        }
+        .ct-form-panel-title {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; font-weight: 500; color: #1d6fd8;
+          letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px;
+        }
+        .ct-form-panel-sub { font-size: 12px; color: #b0bccf; margin: 0; }
+        .ct-form-panel-body { padding: 22px; }
+
+        /* ── Form fields ── */
+        .ct-form-fields { display: flex; flex-direction: column; gap: 14px; }
+        .ct-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 480px) { .ct-row { grid-template-columns: 1fr; } }
+        .ct-field-wrap { display: flex; flex-direction: column; }
+        .ct-label {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; color: #b0bccf;
+          letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px;
+        }
+        .ct-req { color: #1d6fd8; }
+        .ct-opt { color: #b0bccf; font-weight: 400; letter-spacing: 0; }
+        .ct-input {
+          background: #fafafa; border: 1.5px solid #e2e8f0; border-radius: 8px;
+          padding: 10px 14px; font-family: 'Sora', sans-serif;
+          font-size: 13px; color: #0a2540; outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+          width: 100%;
+        }
+        .ct-input::placeholder { color: #b0bccf; font-size: 12px; }
+        .ct-input.focused, .ct-input:focus {
+          border-color: #1d6fd8; box-shadow: 0 0 0 3px rgba(29,111,216,0.1); background: #ffffff;
+        }
+        .ct-select { appearance: none; cursor: pointer; }
+        .ct-textarea { resize: vertical; min-height: 120px; }
+
+        .ct-error {
+          background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.2);
+          border-radius: 8px; padding: 10px 14px;
+          font-size: 12px; color: #dc2626;
+        }
+
+        /* ── Button ── */
+        .ct-btn {
+          width: 100%; padding: 13px 20px;
+          background: #0057ff; color: #fff; border: none; border-radius: 10px;
+          font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700;
+          cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+          transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+        }
+        .ct-btn:hover:not(:disabled) { background: #0040cc; box-shadow: 0 8px 24px rgba(0,87,255,0.25); transform: translateY(-1px); }
+        .ct-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .ct-btn-arrow {
+          width: 26px; height: 26px; border-radius: 50%;
+          background: rgba(255,255,255,0.2);
+          display: flex; align-items: center; justify-content: center; font-size: 13px;
+        }
+        .ct-privacy {
+          text-align: center; font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; color: #b0bccf; letter-spacing: 0.5px; margin: 0;
+        }
+
+        /* ── Success ── */
+        .ct-success-title { font-size: 18px; font-weight: 800; color: #0a2540; margin: 0 0 8px; }
+        .ct-success-sub { font-size: 13px; color: #b0bccf; line-height: 1.6; margin: 0 0 20px; }
+
+        /* ── FAQ ── */
+        .ct-faq-section {
+          max-width: 1080px; margin: 0 auto;
+          padding: 32px 32px 56px;
+        }
+        @media (max-width: 768px) { .ct-faq-section { padding: 24px 16px 40px; } }
+        .ct-divider {
+          height: 1px; background: #e2e8f0; margin-bottom: 32px;
+        }
+        .ct-faq-grid {
+          display: grid; grid-template-columns: 1fr 2fr;
+          gap: 40px; align-items: start;
+        }
+        @media (max-width: 768px) { .ct-faq-grid { grid-template-columns: 1fr; gap: 24px; } }
+        .ct-faq-heading-eyebrow {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px; font-weight: 500; color: #1d6fd8;
+          letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+        }
+        .ct-faq-heading-title {
+          font-size: clamp(18px, 2.5vw, 24px); font-weight: 800;
+          color: #0a2540; line-height: 1.2; margin: 0 0 10px;
+        }
+        .ct-faq-heading-sub { font-size: 12px; color: #b0bccf; line-height: 1.65; margin: 0; }
+
+        .faq-item {
+          background: #ffffff; border: 1px solid #e2e8f0;
+          border-radius: 12px; overflow: hidden;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .faq-item.open { border-color: rgba(29,111,216,0.3); box-shadow: 0 4px 16px rgba(29,111,216,0.07); }
+        .faq-btn {
+          width: 100%; background: none; border: none;
+          padding: 15px 18px; display: flex; justify-content: space-between;
+          align-items: center; cursor: pointer; gap: 12; text-align: left;
+        }
+        .faq-q { font-size: 13px; font-weight: 600; color: #0a2540; line-height: 1.4; }
+        .faq-icon { color: #1d6fd8; font-size: 18px; flex-shrink: 0; transition: transform 0.22s; line-height: 1; }
+        .faq-body { overflow: hidden; transition: max-height 0.3s ease; }
+        .faq-ans {
+          font-size: 12px; color: #b0bccf; line-height: 1.75;
+          padding: 0 18px 14px; margin: 0;
+        }
       `}</style>
 
-      <Background />
       <Navigation />
 
-      {/* ── HERO + FORM ── */}
+      {/* Status bar */}
+      <div className="ct-statusbar">
+        <div className="ct-statusbar-live">
+          <span className="ct-ping">
+            <span className="ct-ping-ring" />
+            <span className="ct-ping-dot" />
+          </span>
+          Support team online
+        </div>
+        <span>Average reply time: under 2 hours</span>
+      </div>
+
+      {/* Hero */}
+      <div className="ct-hero">
+        <div className="ct-eyebrow">
+          <span className="ct-eyebrow-line" />
+          Get in touch
+        </div>
+        <h1 className="ct-hero-title">We'd love to hear from you</h1>
+        <p className="ct-hero-sub">
+          Questions about eSIM plans, activation help, refunds, or partnerships
+          — our team is here 24/7.
+        </p>
+      </div>
+
+      {/* Body */}
       <div
         ref={topRef}
+        className="ct-body ct-fade"
         style={{
-          position: "relative",
-          zIndex: 2,
-          maxWidth: 1080,
-          margin: "0 auto",
-          padding: "52px 28px 48px",
           opacity: topVis ? 1 : 0,
-          transform: topVis ? "translateY(0)" : "translateY(24px)",
-          transition: "opacity 0.6s ease, transform 0.6s ease",
+          transform: topVis ? "translateY(0)" : "translateY(20px)",
         }}
       >
-        {/* Page header — full width, tight */}
-        <div style={{ marginBottom: 36 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "rgba(0,144,255,0.1)",
-              border: "1px solid rgba(0,144,255,0.28)",
-              borderRadius: 999,
-              padding: "5px 18px",
-              marginBottom: 16,
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "#0090FF",
-                boxShadow: "0 0 8px #0090FF",
-                display: "inline-block",
-              }}
-            />
-            <span
-              style={{
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase" as const,
-                color: "#0055cc",
-                fontWeight: 700,
-              }}
-            >
-              Get in Touch
-            </span>
-          </div>
-          <h1
-            style={{
-              fontFamily: "'DM Sans',sans-serif",
-              fontSize: "clamp(2rem,4vw,3rem)",
-              fontWeight: 800,
-              lineHeight: 1.1,
-              color: "#002f6c",
-              margin: "0 0 12px",
-              letterSpacing: "-0.025em",
-            }}
-          >
-            We'd love to{" "}
-            <span
-              style={{
-                color: "#0072FF",
-                position: "relative",
-                display: "inline-block",
-              }}
-            >
-              hear from you
-              <span
-                style={{
-                  position: "absolute",
-                  bottom: -3,
-                  left: 0,
-                  right: 0,
-                  height: 3,
-                  background: "linear-gradient(90deg,#0072FF,#00C8FF)",
-                  borderRadius: 2,
-                }}
-              />
-            </span>
-          </h1>
-          <p
-            style={{
-              color: "#4a7ea0",
-              fontSize: "1rem",
-              lineHeight: 1.7,
-              margin: 0,
-              maxWidth: 560,
-            }}
-          >
-            Have a question about an eSIM plan, need help with activation, or
-            want to explore partnerships? Our team is here 24/7.
-          </p>
-        </div>
-
-        {/* ── CHANNEL STRIP ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4,1fr)",
-            gap: 12,
-            marginBottom: 36,
-          }}
-        >
-          {channels.map((c, i) => (
-            <a
-              key={c.label}
-              href={c.href}
-              style={{
-                textDecoration: "none",
-                background: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(0,140,255,0.18)",
-                borderRadius: 14,
-                padding: "16px 16px 14px",
-                backdropFilter: "blur(10px)",
-                boxShadow: "0 2px 16px rgba(0,80,200,0.07)",
-                position: "relative",
-                overflow: "hidden",
-                display: "block",
-                transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.transform =
-                  "translateY(-3px)";
-                (e.currentTarget as HTMLElement).style.boxShadow =
-                  "0 8px 24px rgba(0,80,200,0.13)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.transform =
-                  "translateY(0)";
-                (e.currentTarget as HTMLElement).style.boxShadow =
-                  "0 2px 16px rgba(0,80,200,0.07)";
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2.5,
-                  background: `linear-gradient(90deg,hsl(${208 + i * 10},100%,48%),hsl(${220 + i * 10},100%,64%))`,
-                  borderRadius: "14px 14px 0 0",
-                }}
-              />
-              <div style={{ fontSize: "1.6rem", marginBottom: 8 }}>
-                {c.icon}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#8ab8d0",
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase" as const,
-                  marginBottom: 3,
-                }}
-              >
-                {c.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.88rem",
-                  fontWeight: 700,
-                  color: "#0055cc",
-                  marginBottom: 2,
-                }}
-              >
-                {c.value}
-              </div>
-              <div style={{ fontSize: "0.74rem", color: "#94bdd4" }}>
-                {c.note}
-              </div>
+        {/* Channel strip */}
+        <div className="ct-channels" style={{ marginTop: 24 }}>
+          {channels.map((c) => (
+            <a key={c.label} href={c.href} className="ct-channel">
+              <div className="ct-channel-icon">{c.icon}</div>
+              <div className="ct-channel-label">{c.label}</div>
+              <div className="ct-channel-value">{c.value}</div>
+              <div className="ct-channel-note">{c.note}</div>
             </a>
           ))}
         </div>
 
-        {/* ── MAIN CONTENT: info left + form right ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1.5fr",
-            gap: 28,
-            alignItems: "start",
-          }}
-        >
-          {/* Left: trust + mini blurb */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column" as const,
-              gap: 14,
-            }}
-          >
-            <div
-              style={{
-                background: "rgba(255,255,255,0.62)",
-                border: "1px solid rgba(0,140,255,0.16)",
-                borderRadius: 16,
-                padding: "22px 20px",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "'DM Sans',sans-serif",
-                  fontSize: "1rem",
-                  fontWeight: 800,
-                  color: "#002f6c",
-                  margin: "0 0 10px",
-                }}
-              >
-                Before you send
-              </h3>
-              <p
-                style={{
-                  color: "#4a7ea0",
-                  fontSize: "0.84rem",
-                  lineHeight: 1.75,
-                  margin: "0 0 18px",
-                }}
-              >
-                Whether you need help with an order, eSIM activation, refunds,
-                or want to discuss a business partnership — fill in the form and
-                we'll respond promptly.
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column" as const,
-                  gap: 10,
-                }}
-              >
+        {/* Main grid: left info + right form */}
+        <div className="ct-main-grid">
+          {/* Left */}
+          <div>
+            <div className="ct-panel">
+              <div className="ct-panel-head">
+                <span className="ct-panel-title">Before you send</span>
+              </div>
+              <div className="ct-panel-body" style={{ padding: "16px 20px" }}>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "#b0bccf",
+                    lineHeight: 1.7,
+                    margin: "0 0 16px",
+                  }}
+                >
+                  Fill in the form and we'll get back to you promptly — whether
+                  it's an order issue, activation help, or a partnership
+                  enquiry.
+                </p>
                 {[
                   {
                     icon: "⏱️",
@@ -789,210 +617,57 @@ export default function ContactPage() {
                     d: "Your data is never shared",
                   },
                 ].map((item) => (
-                  <div
-                    key={item.t}
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        flexShrink: 0,
-                        background: "rgba(0,114,255,0.07)",
-                        border: "1px solid rgba(0,114,255,0.12)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1rem",
-                      }}
-                    >
-                      {item.icon}
-                    </div>
+                  <div key={item.t} className="ct-trust-item">
+                    <div className="ct-trust-icon">{item.icon}</div>
                     <div>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          color: "#002f6c",
-                          fontSize: "0.84rem",
-                        }}
-                      >
-                        {item.t}
-                      </div>
-                      <div style={{ color: "#7aadcc", fontSize: "0.75rem" }}>
-                        {item.d}
-                      </div>
+                      <div className="ct-trust-title">{item.t}</div>
+                      <div className="ct-trust-sub">{item.d}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Response time badge */}
-            <div
-              style={{
-                background:
-                  "linear-gradient(135deg,rgba(0,85,255,0.08),rgba(0,184,255,0.08))",
-                border: "1px solid rgba(0,114,255,0.2)",
-                borderRadius: 12,
-                padding: "14px 18px",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  flexShrink: 0,
-                  background: "linear-gradient(135deg,#0055ff,#00b8ff)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.2rem",
-                  boxShadow: "0 4px 14px rgba(0,85,255,0.25)",
-                }}
-              >
-                💬
-              </div>
+            <div className="ct-response-badge">
+              <div className="ct-response-icon">💬</div>
               <div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    color: "#002f6c",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  Average reply time
-                </div>
-                <div
-                  style={{
-                    color: "#0072FF",
-                    fontWeight: 800,
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  Under 2 hours
-                </div>
+                <div className="ct-response-label">Average reply time</div>
+                <div className="ct-response-val">Under 2 hours</div>
               </div>
             </div>
           </div>
 
           {/* Right: form */}
-          <div
-            style={{
-              background: "rgba(255,255,255,0.78)",
-              border: "1px solid rgba(0,140,255,0.2)",
-              borderRadius: 20,
-              padding: "30px 28px",
-              backdropFilter: "blur(14px)",
-              boxShadow: "0 8px 40px rgba(0,80,200,0.11)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 3,
-                background: "linear-gradient(90deg,#0072FF,#00C8FF)",
-                borderRadius: "20px 20px 0 0",
-              }}
-            />
-            <h2
-              style={{
-                fontFamily: "'DM Sans',sans-serif",
-                fontWeight: 800,
-                color: "#002f6c",
-                fontSize: "1.1rem",
-                margin: "0 0 4px",
-              }}
-            >
-              Send a message
-            </h2>
-            <p
-              style={{
-                color: "#7aadcc",
-                fontSize: "0.81rem",
-                margin: "0 0 22px",
-              }}
-            >
-              All fields marked <span style={{ color: "#0072FF" }}>*</span> are
-              required.
-            </p>
-            <ContactForm />
+          <div className="ct-form-panel">
+            <div className="ct-form-panel-head">
+              <div className="ct-form-panel-title">Send a message</div>
+              <p className="ct-form-panel-sub">
+                Fields marked <span style={{ color: "#1d6fd8" }}>*</span> are
+                required.
+              </p>
+            </div>
+            <div className="ct-form-panel-body">
+              <ContactForm />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── FAQ ── */}
+      {/* FAQ */}
       <div
         ref={faqRef}
+        className="ct-faq-section ct-fade"
         style={{
-          position: "relative",
-          zIndex: 2,
-          maxWidth: 1080,
-          margin: "0 auto",
-          padding: "0 28px 64px",
           opacity: faqVis ? 1 : 0,
-          transform: faqVis ? "translateY(0)" : "translateY(24px)",
-          transition: "opacity 0.6s ease, transform 0.6s ease",
+          transform: faqVis ? "translateY(0)" : "translateY(20px)",
         }}
       >
-        <div
-          style={{
-            height: 1,
-            background:
-              "linear-gradient(90deg,transparent,rgba(0,114,255,0.25),transparent)",
-            marginBottom: 40,
-          }}
-        />
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 2fr",
-            gap: 40,
-            alignItems: "start",
-          }}
-        >
+        <div className="ct-divider" />
+        <div className="ct-faq-grid">
           <div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#0072FF",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase" as const,
-                marginBottom: 10,
-              }}
-            >
-              Support FAQ
-            </div>
-            <h2
-              style={{
-                fontFamily: "'DM Sans',sans-serif",
-                fontSize: "clamp(1.4rem,2.5vw,1.9rem)",
-                fontWeight: 800,
-                color: "#002f6c",
-                lineHeight: 1.2,
-                margin: "0 0 12px",
-              }}
-            >
-              Common questions
-            </h2>
-            <p
-              style={{
-                color: "#4a7ea0",
-                fontSize: "0.88rem",
-                lineHeight: 1.7,
-                margin: 0,
-              }}
-            >
+            <div className="ct-faq-heading-eyebrow">Support FAQ</div>
+            <h2 className="ct-faq-heading-title">Common questions</h2>
+            <p className="ct-faq-heading-sub">
               Quick answers before you reach out. Can't find what you need? Send
               us a message above.
             </p>
@@ -1001,18 +676,7 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          background: "rgba(180,220,255,0.5)",
-          backdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(0,140,255,0.18)",
-        }}
-      >
-        <style>{`footer[style]{background:transparent!important;border-top:none!important}footer p{color:#2a5a8a!important}footer h4{color:#002f6c!important}`}</style>
-        <Footer />
-      </div>
+      <Footer />
     </main>
   );
 }

@@ -11,6 +11,7 @@ interface Destination {
   slug: string;
   flag: string;
   image?: string | null;
+  retail_price?: number | null;
 }
 
 function imgSrc(path?: string | null) {
@@ -36,196 +37,239 @@ export default function DestinationsSection() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;600;700&family=Noto+Color+Emoji&display=swap');
 
-        @media (max-width: 1024px) { .yh-dest-grid { grid-template-columns: repeat(4, 1fr) !important; } }
-        @media (max-width: 640px)  { .yh-dest-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-        @media (max-width: 400px)  { .yh-dest-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+        .yh-dest-wrap {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 48px 24px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .yh-dest-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+        }
+
+        @media (max-width: 900px) { .yh-dest-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .yh-dest-grid { grid-template-columns: 1fr; } }
 
         .yh-dest-card {
-          background: rgba(255,255,255,0.6);
-          border: 1px solid rgba(14,99,214,0.15);
-          border-radius: 10px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 18px 20px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
           text-decoration: none;
-          display: block;
-          overflow: hidden;
-          backdrop-filter: blur(6px);
+          transition: background 0.18s, border-color 0.18s, transform 0.18s, box-shadow 0.18s;
         }
+
         .yh-dest-card:hover {
-          border-color: rgba(14,99,214,0.45) !important;
-          transform: translateY(-3px) !important;
-          box-shadow: 0 8px 24px rgba(14,99,214,0.12) !important;
-          background: rgba(255,255,255,0.85) !important;
+          background: #f0f6ff;
+          border-color: rgba(0,102,255,0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,102,255,0.09);
         }
-        .yh-dest-card:hover .yh-dest-name {
-          color: #0D6EFD !important;
+
+        .yh-dest-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          min-width: 0;
         }
-        .yh-dest-card:hover .yh-dest-img img {
-          transform: scale(1.05);
+
+        .yh-dest-flag-wrap {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          overflow: hidden;
+          flex-shrink: 0;
+          background: #f0f4f8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #e2e8f0;
         }
+
+        .yh-dest-flag-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
         .yh-flag-emoji {
           font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
           font-style: normal;
           line-height: 1;
-          display: inline-block;
+          font-size: 26px;
+        }
+
+        .yh-dest-info {
+          min-width: 0;
+        }
+
+        .yh-dest-name {
+          font-family: 'Sora', sans-serif;
+          font-size: 15px;
+          font-weight: 600;
+          color: #0a2540;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          line-height: 1.3;
+        }
+
+        .yh-dest-price-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 3px;
+        }
+
+        .yh-dest-price-from {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 10px;
+          color: #8a9ab5;
+          letter-spacing: 0.3px;
+        }
+
+        .yh-dest-price-val {
+          font-family: 'Sora', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          color: #0066ff;
+        }
+
+        .yh-dest-price-unit {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 10px;
+          color: #8a9ab5;
+          font-weight: 400;
+        }
+
+        .yh-dest-right {
+          flex-shrink: 0;
+        }
+
+        .yh-arrow {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: #eef3fb;
+          border: 1px solid #d4dfee;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #3b7dd8;
+          font-size: 13px;
+          transition: background 0.18s, border-color 0.18s, color 0.18s;
+          flex-shrink: 0;
+        }
+
+        .yh-dest-card:hover .yh-arrow {
+          background: #0066ff;
+          border-color: #0066ff;
+          color: #ffffff;
+        }
+
+        .yh-empty {
+          color: #8a9ab5;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 12px;
+          padding: 32px 0;
+          grid-column: 1 / -1;
         }
       `}</style>
 
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "0 24px",
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
-        <section style={{ padding: "48px 0" }}>
-          {/* Tag */}
-          <div
+      <div className="yh-dest-wrap">
+        {/* Tag */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            color: "#1d6fd8",
+            letterSpacing: "2.5px",
+            textTransform: "uppercase",
+            marginBottom: 10,
+          }}
+        >
+          <span
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 9,
-              color: "#1d6fd8",
-              letterSpacing: "2.5px",
-              textTransform: "uppercase",
-              marginBottom: 10,
+              display: "inline-block",
+              width: 14,
+              height: 1,
+              background: "#1d6fd8",
             }}
-          >
-            <span
-              style={{
-                display: "inline-block",
-                width: 14,
-                height: 1,
-                background: "#1d6fd8",
-              }}
-            />
-            Popular destinations
-          </div>
+          />
+          Popular destinations
+        </div>
 
-          {/* Title */}
-          <div
-            style={{
-              fontFamily: "'Sora', sans-serif",
-              fontWeight: 700,
-              fontSize: 24,
-              color: "#0a2540",
-              marginBottom: 24,
-            }}
-          >
-            Where are you headed?
-          </div>
+        {/* Title */}
+        <div
+          style={{
+            fontFamily: "'Sora', sans-serif",
+            fontWeight: 700,
+            fontSize: 24,
+            color: "#0a2540",
+            marginBottom: 28,
+          }}
+        >
+          Where are you headed?
+        </div>
 
-          {loading ? (
-            <div
-              style={{
-                color: "#6a90b4",
-                fontSize: 12,
-                padding: "32px 0",
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-            >
-              loading destinations…
-            </div>
-          ) : destinations.length === 0 ? (
-            <div
-              style={{
-                color: "#6a90b4",
-                fontSize: 12,
-                padding: "32px 0",
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-            >
-              no destinations available.
-            </div>
-          ) : (
-            <div
-              className="yh-dest-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 12,
-              }}
-            >
-              {destinations.map((d) => {
-                const src = imgSrc(d.image);
-                return (
-                  <Link
-                    key={d.slug}
-                    href={`/destinations/${d.slug}`}
-                    className="yh-dest-card"
-                  >
-                    {src ? (
-                      <div
-                        className="yh-dest-img"
-                        style={{
-                          width: "100%",
-                          aspectRatio: "16/9",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <img
-                          src={src}
-                          alt={d.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                            transition: "transform 0.3s ease",
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          aspectRatio: "16/9",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "rgba(219,234,254,0.5)",
-                        }}
-                      >
-                        <span
-                          className="yh-flag-emoji"
-                          style={{ fontSize: 36 }}
-                        >
-                          {d.flag}
-                        </span>
-                      </div>
-                    )}
-                    <div
-                      className="yh-dest-name"
-                      style={{
-                        padding: "10px 8px 12px",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: "#1a5ca8",
-                        fontFamily: "'Sora', sans-serif",
-                        letterSpacing: "0.3px",
-                        transition: "color 0.2s",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 5,
-                      }}
-                    >
-                      <span className="yh-flag-emoji" style={{ fontSize: 14 }}>
-                        {d.flag}
-                      </span>
-                      {d.name}
+        {/* Grid */}
+        {loading ? (
+          <div className="yh-empty">loading destinations…</div>
+        ) : destinations.length === 0 ? (
+          <div className="yh-empty">no destinations available.</div>
+        ) : (
+          <div className="yh-dest-grid">
+            {destinations.map((d) => {
+              const src = imgSrc(d.image);
+              return (
+                <Link
+                  key={d.slug}
+                  href={`/destinations/${d.slug}`}
+                  className="yh-dest-card"
+                >
+                  <div className="yh-dest-left">
+                    <div className="yh-dest-flag-wrap">
+                      {src ? (
+                        <img src={src} alt={d.name} />
+                      ) : (
+                        <span className="yh-flag-emoji">{d.flag}</span>
+                      )}
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                    <div className="yh-dest-info">
+                      <div className="yh-dest-name">{d.name}</div>
+                      {d.retail_price != null && (
+                        <div className="yh-dest-price-row">
+                          <span className="yh-dest-price-from">from</span>
+                          <span className="yh-dest-price-val">
+                            ₱{d.retail_price.toFixed(2)}
+                          </span>
+                          <span className="yh-dest-price-unit">PHP</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="yh-dest-right">
+                    <div className="yh-arrow" aria-hidden="true">
+                      →
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );
