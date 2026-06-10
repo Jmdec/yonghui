@@ -524,163 +524,6 @@ function Story() {
   );
 }
 
-function Team() {
-  const { ref, visible } = useFadeIn();
-  const members = [
-    {
-      name: "Wei Zhang",
-      role: "Co-founder & CEO",
-      emoji: "👨‍💼",
-      bio: "Serial entrepreneur with 12 years in telecom. Previously built connectivity platforms across Southeast Asia.",
-    },
-    {
-      name: "Sofia Reyes",
-      role: "Co-founder & CTO",
-      emoji: "👩‍💻",
-      bio: "Former senior engineer at a global carrier. Expert in eSIM provisioning and GSMA standards.",
-    },
-    {
-      name: "Marcus Tan",
-      role: "Head of Operations",
-      emoji: "👨‍🔧",
-      bio: "Operations lead with deep experience in SIM logistics and carrier partnerships across 30+ markets.",
-    },
-    {
-      name: "Aika Yamamoto",
-      role: "Head of Customer Success",
-      emoji: "👩‍🎧",
-      bio: "Passionate about traveler experience. Leads our 24/7 support team to ensure every customer gets connected.",
-    },
-  ];
-  return (
-    <section
-      ref={ref}
-      style={{
-        position: "relative",
-        zIndex: 2,
-        padding: "80px 24px",
-        maxWidth: 1060,
-        margin: "0 auto",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(36px)",
-        transition: "opacity 0.7s ease, transform 0.7s ease",
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: "clamp(1.6rem, 3vw, 2.3rem)",
-          fontWeight: 800,
-          color: "#002f6c",
-          textAlign: "center",
-          marginBottom: 8,
-        }}
-      >
-        Meet the Team
-      </h2>
-      <p
-        style={{
-          color: "#4a85b0",
-          textAlign: "center",
-          marginBottom: 52,
-          fontSize: "0.97rem",
-        }}
-      >
-        The people behind YH ESIM
-      </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-          gap: 20,
-        }}
-      >
-        {members.map((m, i) => (
-          <div
-            key={m.name}
-            style={{
-              background: "rgba(255,255,255,0.65)",
-              border: "1px solid rgba(0,140,255,0.18)",
-              borderRadius: 20,
-              padding: "36px 28px",
-              textAlign: "center",
-              backdropFilter: "blur(10px)",
-              boxShadow: "0 4px 20px rgba(0,80,200,0.07)",
-              position: "relative",
-              overflow: "hidden",
-              opacity: visible ? 1 : 0,
-              transform: visible ? "translateY(0)" : "translateY(24px)",
-              transition: `opacity 0.6s ease ${i * 0.1}s, transform 0.6s ease ${i * 0.1}s`,
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 3,
-                background: "linear-gradient(90deg, #0060ff, #00c0ff)",
-                borderRadius: "20px 20px 0 0",
-              }}
-            />
-            <div
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                background:
-                  "linear-gradient(135deg, rgba(0,100,255,0.12), rgba(0,190,255,0.1))",
-                border: "2px solid rgba(0,140,255,0.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "2rem",
-                margin: "0 auto 16px",
-              }}
-            >
-              {m.emoji}
-            </div>
-            <div
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 700,
-                color: "#002f6c",
-                fontSize: "1rem",
-                marginBottom: 4,
-              }}
-            >
-              {m.name}
-            </div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#0072FF",
-                fontWeight: 600,
-                letterSpacing: "0.05em",
-                marginBottom: 12,
-                textTransform: "uppercase" as const,
-              }}
-            >
-              {m.role}
-            </div>
-            <p
-              style={{
-                color: "#3d6e90",
-                fontSize: "0.82rem",
-                lineHeight: 1.65,
-                margin: 0,
-              }}
-            >
-              {m.bio}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function WhyYonghui() {
   const { ref, visible } = useFadeIn();
   const reasons = [
@@ -922,6 +765,7 @@ function CtaBanner() {
 
 export default function AboutPage() {
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const prev = document.body.style.background;
     document.body.style.background =
       "linear-gradient(160deg, #dff2ff 0%, #c8e8ff 30%, #b0d8ff 60%, #c4eeff 100%)";
@@ -929,7 +773,6 @@ export default function AboutPage() {
       document.body.style.background = prev;
     };
   }, []);
-
   return (
     <main
       style={{
@@ -948,8 +791,6 @@ export default function AboutPage() {
       <Mission />
       <Divider />
       <Story />
-      <Divider />
-      <Team />
       <Divider />
       <WhyYonghui />
       <CtaBanner />
