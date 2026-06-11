@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Navigation } from "@/components/layout/nav";
@@ -38,107 +38,20 @@ interface Plan {
   is_active: boolean;
 }
 
-function PlanCard({
-  plan,
-  featured,
-  index,
-  destinationName,
-}: {
-  plan: Plan;
-  featured?: boolean;
-  index: number;
-  destinationName: string;
-}) {
-  const router = useRouter();
-
-  const handleGetPlan = () => {
-    sessionStorage.setItem(
-      "selected_plan",
-      JSON.stringify({
-        id: String(plan.id),
-        name: plan.name,
-        price: plan.retail_price,
-        duration: plan.validity_days ? `${plan.validity_days} days` : "—",
-        data: plan.data_label,
-        features: [
-          plan.speed,
-          plan.sim_type,
-          ...(plan.has_voice ? ["Voice calls included"] : []),
-          ...(plan.has_data ? ["Data included"] : []),
-          ...(plan.description ? [plan.description] : []),
-        ],
-        popular: featured ?? false,
-        destinationName,
-      }),
-    );
-    router.push("/checkout");
-  };
-
-  const specs = [
-    plan.data_label,
-    plan.validity_days ? `${plan.validity_days} days` : null,
-    plan.speed,
-    plan.sim_type,
-    plan.has_voice ? "Voice" : null,
-  ].filter(Boolean) as string[];
-
-  return (
-    <div
-      className="yh-plan-card"
-      style={{
-        animationDelay: `${index * 60}ms`,
-        border: featured ? "2px solid #0066ff" : "1px solid #e2e8f0",
-        background: featured ? "#f0f6ff" : "#ffffff",
-      }}
-    >
-      {featured && <div className="yh-plan-badge">★ Most Popular</div>}
-
-      {/* Plan name */}
-      <div className="yh-plan-name">{plan.name}</div>
-
-      {/* Price */}
-      <div className="yh-plan-price-block">
-        <span className="yh-plan-price">{plan.formatted_price}</span>
-        {plan.validity_days && (
-          <span className="yh-plan-per">/ {plan.validity_days} days</span>
-        )}
-      </div>
-
-      {/* Spec chips */}
-      <div className="yh-plan-specs">
-        {specs.map((s) => (
-          <span key={s} className="yh-spec-chip">
-            {s}
-          </span>
-        ))}
-      </div>
-
-      {/* Description */}
-      {plan.description && <p className="yh-plan-desc">{plan.description}</p>}
-
-      {/* CTA */}
-      <button
-        onClick={handleGetPlan}
-        className={`yh-plan-btn${featured ? " yh-plan-btn-primary" : ""}`}
-      >
-        Get Plan →
-      </button>
-    </div>
-  );
-}
-
-function SkeletonCard() {
+function SkeletonBlock() {
   return <div className="yh-skeleton" />;
 }
 
 export default function DestinationDetailPage() {
   const params = useParams();
   const slug = (params?.slug ?? params?.id) as string;
+  const router = useRouter();
 
   const [destination, setDestination] = useState<Destination | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeId, setActiveId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -157,14 +70,65 @@ export default function DestinationDetailPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  const featuredIndex =
-    plans.length >= 3
-      ? Math.floor(plans.length / 2)
-      : plans.length === 2
-        ? 1
-        : 0;
+  const sortedPlans = useMemo(
+    () =>
+      [...plans].sort(
+        (a, b) => (a.validity_days ?? 0) - (b.validity_days ?? 0),
+      ),
+    [plans],
+  );
+
+  const featuredId =
+    sortedPlans.length >= 3
+      ? sortedPlans[Math.floor(sortedPlans.length / 2)]?.id
+      : sortedPlans.length === 2
+        ? sortedPlans[1]?.id
+        : sortedPlans[0]?.id;
+
+  useEffect(() => {
+    if (sortedPlans.length > 0 && activeId === null) {
+      setActiveId(featuredId ?? sortedPlans[0].id);
+    }
+  }, [sortedPlans, featuredId, activeId]);
+
+  const activePlan =
+    sortedPlans.find((p) => p.id === activeId) ?? sortedPlans[0];
+
+  const handleGetPlan = () => {
+    if (!activePlan || !destination) return;
+    sessionStorage.setItem(
+      "selected_plan",
+      JSON.stringify({
+        id: String(activePlan.id),
+        name: activePlan.name,
+        price: activePlan.retail_price,
+        duration: activePlan.validity_days
+          ? `${activePlan.validity_days} days`
+          : "—",
+        data: activePlan.data_label,
+        features: [
+          activePlan.speed,
+          activePlan.sim_type,
+          ...(activePlan.has_voice ? ["Voice calls included"] : []),
+          ...(activePlan.has_data ? ["Data included"] : []),
+          ...(activePlan.description ? [activePlan.description] : []),
+        ],
+        popular: activePlan.id === featuredId,
+        destinationName: destination.name,
+      }),
+    );
+    router.push("/checkout");
+  };
 
   const flagSrc = imgSrc(destination?.image);
+
+  const specs = activePlan
+    ? ([
+        activePlan.speed,
+        activePlan.sim_type,
+        activePlan.has_voice ? "Voice" : null,
+      ].filter(Boolean) as string[])
+    : [];
 
   return (
     <>
@@ -172,7 +136,7 @@ export default function DestinationDetailPage() {
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;600;700&family=Noto+Color+Emoji&display=swap');
 
         @keyframes fadeslide {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes shimmer {
@@ -217,19 +181,20 @@ export default function DestinationDetailPage() {
         .yh-hero {
           background: #ffffff;
           border-bottom: 1px solid #e2e8f0;
-          padding: 28px 32px 24px;
+          padding: 24px 32px;
         }
         .yh-hero-inner {
-          max-width: 1100px;
+          max-width: 760px;
           margin: 0 auto;
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 18px;
+          flex-wrap: wrap;
         }
         .yh-hero-img {
-          width: 72px;
-          height: 72px;
-          border-radius: 16px;
+          width: 60px;
+          height: 60px;
+          border-radius: 14px;
           border: 1px solid #e2e8f0;
           background: #f0f4f8;
           overflow: hidden;
@@ -246,9 +211,10 @@ export default function DestinationDetailPage() {
         }
         .yh-hero-flag {
           font-family: 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
-          font-size: 38px;
+          font-size: 32px;
           line-height: 1;
         }
+        .yh-hero-text { flex: 1; min-width: 200px; }
         .yh-hero-eyebrow {
           display: inline-flex;
           align-items: center;
@@ -268,16 +234,17 @@ export default function DestinationDetailPage() {
         }
         .yh-hero-title {
           font-family: 'Sora', sans-serif;
-          font-size: 30px;
+          font-size: 26px;
           font-weight: 700;
           color: #0a2540;
-          margin: 0 0 12px;
+          margin: 0;
           line-height: 1.1;
         }
         .yh-hero-pills {
           display: flex;
           gap: 6px;
           flex-wrap: wrap;
+          flex-shrink: 0;
         }
         .yh-hero-pill {
           padding: 4px 12px;
@@ -289,13 +256,14 @@ export default function DestinationDetailPage() {
           color: #3b6a9a;
           font-weight: 500;
           letter-spacing: 0.5px;
+          white-space: nowrap;
         }
 
         /* ── Main content ── */
         .yh-main {
-          max-width: 1100px;
+          max-width: 760px;
           margin: 0 auto;
-          padding: 28px 32px 48px;
+          padding: 24px 32px 48px;
           width: 100%;
           box-sizing: border-box;
         }
@@ -306,8 +274,6 @@ export default function DestinationDetailPage() {
           align-items: center;
           justify-content: space-between;
           margin-bottom: 16px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid #e2e8f0;
         }
         .yh-section-label {
           font-family: 'IBM Plex Mono', monospace;
@@ -322,48 +288,82 @@ export default function DestinationDetailPage() {
           color: #b0bccf;
         }
 
-        /* ── Plans grid ── */
-        .yh-plans-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 12px;
-        }
-        @media (max-width: 1024px) { .yh-plans-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 768px)  { .yh-plans-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px)  { .yh-plans-grid { grid-template-columns: 1fr; } }
-
-        /* ── Plan card ── */
-        .yh-plan-card {
-          border-radius: 14px;
-          padding: 18px 16px 16px;
+        /* ── Duration tabs ── */
+        .yh-tabs {
           display: flex;
-          flex-direction: column;
-          gap: 10px;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-bottom: 18px;
+        }
+        .yh-tab {
           position: relative;
-          animation: fadeslide 0.4s ease both;
-          transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, background 0.18s;
+          font-family: 'Sora', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          color: #0a2540;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 10px 16px;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s, color 0.15s;
         }
-        .yh-plan-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 24px rgba(0,102,255,0.09);
-          border-color: rgba(0,102,255,0.35) !important;
-          background: #f0f6ff !important;
+        .yh-tab:hover {
+          border-color: rgba(0,102,255,0.3);
         }
-
-        .yh-plan-badge {
-          position: absolute;
-          top: -1px;
-          right: 14px;
+        .yh-tab.active {
           background: #0066ff;
+          border-color: #0066ff;
           color: #ffffff;
-          font-family: 'IBM Plex Mono', monospace;
+        }
+        .yh-tab-star {
+          position: absolute;
+          top: -7px;
+          right: -7px;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #f0997b;
+          color: #4a1b0c;
           font-size: 9px;
-          font-weight: 500;
-          padding: 3px 10px;
-          border-radius: 0 0 8px 8px;
-          letter-spacing: 0.3px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
+        /* ── Plan display ── */
+        .yh-plan-display {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 24px;
+          animation: fadeslide 0.3s ease both;
+        }
+        .yh-plan-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #e2e8f0;
+          margin-bottom: 16px;
+        }
+        .yh-plan-data-val {
+          font-family: 'Sora', sans-serif;
+          font-size: 36px;
+          font-weight: 700;
+          color: #0a2540;
+          line-height: 1.1;
+        }
+        .yh-plan-data-unit {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 10px;
+          color: #8a9ab5;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          margin-top: 2px;
+        }
         .yh-plan-name {
           font-family: 'IBM Plex Mono', monospace;
           font-size: 10px;
@@ -371,42 +371,42 @@ export default function DestinationDetailPage() {
           color: #6a7f99;
           letter-spacing: 0.5px;
           text-transform: uppercase;
-          padding-top: 4px;
+          margin-bottom: 6px;
         }
-
         .yh-plan-price-block {
           display: flex;
-          align-items: baseline;
-          gap: 6px;
+          flex-direction: column;
+          align-items: flex-end;
+          line-height: 1.2;
         }
         .yh-plan-price {
           font-family: 'Sora', sans-serif;
-          font-size: 28px;
+          font-size: 32px;
           font-weight: 700;
-          color: #0a2540;
-          line-height: 1;
+          color: #0066ff;
           letter-spacing: -0.5px;
+          white-space: nowrap;
         }
         .yh-plan-per {
           font-family: 'IBM Plex Mono', monospace;
           font-size: 10px;
           color: #8a9ab5;
+          white-space: nowrap;
         }
 
         .yh-plan-specs {
           display: flex;
           flex-wrap: wrap;
-          gap: 5px;
-          border-top: 1px solid #e2e8f0;
-          padding-top: 10px;
+          gap: 6px;
+          margin-bottom: 14px;
         }
         .yh-spec-chip {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 9px;
+          font-size: 10px;
           background: #f0f4f8;
           border: 1px solid #e2e8f0;
-          border-radius: 5px;
-          padding: 3px 7px;
+          border-radius: 6px;
+          padding: 5px 10px;
           color: #3b6a9a;
           font-weight: 500;
           white-space: nowrap;
@@ -414,10 +414,10 @@ export default function DestinationDetailPage() {
 
         .yh-plan-desc {
           font-family: 'Sora', sans-serif;
-          font-size: 11px;
-          color: #8a9ab5;
-          margin: 0;
-          line-height: 1.5;
+          font-size: 13px;
+          color: #6a7f99;
+          margin: 0 0 20px;
+          line-height: 1.6;
         }
 
         .yh-plan-btn {
@@ -427,36 +427,24 @@ export default function DestinationDetailPage() {
           align-items: center;
           justify-content: center;
           width: 100%;
-          padding: 10px 0;
+          padding: 13px 0;
           border-radius: 10px;
           font-family: 'Sora', sans-serif;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          margin-top: auto;
-          background: #f0f4f8;
-          color: #1a5ca8;
-          border: 1px solid #e2e8f0;
-          transition: background 0.15s, border-color 0.15s;
+          background: #0066ff;
+          color: #ffffff;
+          transition: background 0.15s;
         }
         .yh-plan-btn:hover {
-          background: #e0eaff;
-          border-color: rgba(0,102,255,0.3);
-        }
-        .yh-plan-btn-primary {
-          background: #0066ff !important;
-          color: #ffffff !important;
-          border-color: #0066ff !important;
-        }
-        .yh-plan-btn-primary:hover {
-          background: #0052cc !important;
-          border-color: #0052cc !important;
+          background: #0052cc;
         }
 
         /* ── Skeleton ── */
         .yh-skeleton {
-          border-radius: 14px;
-          height: 200px;
+          border-radius: 16px;
+          height: 240px;
           background: #f0f4f8;
           background-image: linear-gradient(90deg, #f0f4f8 25%, #e8eef6 50%, #f0f4f8 75%);
           background-size: 200% 100%;
@@ -486,7 +474,7 @@ export default function DestinationDetailPage() {
 
         /* ── Trust strip ── */
         .yh-trust {
-          margin-top: 24px;
+          margin-top: 20px;
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
@@ -512,6 +500,11 @@ export default function DestinationDetailPage() {
           border-radius: 50%;
           background: #0066ff;
           flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+          .yh-plan-top { flex-direction: column; }
+          .yh-plan-price-block { align-items: flex-start; }
         }
       `}</style>
 
@@ -543,20 +536,19 @@ export default function DestinationDetailPage() {
                 )}
               </div>
 
-              <div style={{ flex: 1 }}>
+              <div className="yh-hero-text">
                 <div className="yh-hero-eyebrow">
                   <span className="yh-hero-eyebrow-line" />
-                  eSIM Plans
+                  eSIM plans
                 </div>
 
                 {loading ? (
                   <div
                     style={{
-                      height: 32,
-                      width: 200,
+                      height: 28,
+                      width: 180,
                       background: "#f0f4f8",
                       borderRadius: 8,
-                      marginBottom: 12,
                       backgroundImage:
                         "linear-gradient(90deg,#f0f4f8 25%,#e8eef6 50%,#f0f4f8 75%)",
                       backgroundSize: "200% 100%",
@@ -566,16 +558,16 @@ export default function DestinationDetailPage() {
                 ) : (
                   <h1 className="yh-hero-title">{destination?.name}</h1>
                 )}
+              </div>
 
-                <div className="yh-hero-pills">
-                  {["Instant Activation", "No SIM Swap", "Cancel Anytime"].map(
-                    (f) => (
-                      <span key={f} className="yh-hero-pill">
-                        {f}
-                      </span>
-                    ),
-                  )}
-                </div>
+              <div className="yh-hero-pills">
+                {["Instant activation", "No SIM swap", "Cancel anytime"].map(
+                  (f) => (
+                    <span key={f} className="yh-hero-pill">
+                      {f}
+                    </span>
+                  ),
+                )}
               </div>
             </div>
           </div>
@@ -584,20 +576,14 @@ export default function DestinationDetailPage() {
           <div className="yh-main">
             {!loading && !error && destination && (
               <div className="yh-section-header">
-                <span className="yh-section-label">Choose your plan</span>
+                <span className="yh-section-label">Choose your duration</span>
                 <span className="yh-section-count">
                   {plans.length} plan{plans.length !== 1 ? "s" : ""} available
                 </span>
               </div>
             )}
 
-            {loading && (
-              <div className="yh-plans-grid">
-                {[0, 1, 2, 3].map((i) => (
-                  <SkeletonCard key={i} />
-                ))}
-              </div>
-            )}
+            {loading && <SkeletonBlock />}
 
             {!loading && error && <div className="yh-error">⚠ {error}</div>}
 
@@ -607,28 +593,78 @@ export default function DestinationDetailPage() {
               </div>
             )}
 
-            {!loading && !error && destination && plans.length > 0 && (
-              <div className="yh-plans-grid">
-                {plans.map((plan, i) => (
-                  <PlanCard
-                    key={plan.id}
-                    plan={plan}
-                    featured={plans.length > 1 && i === featuredIndex}
-                    index={i}
-                    destinationName={destination.name}
-                  />
-                ))}
-              </div>
+            {!loading && !error && destination && sortedPlans.length > 0 && (
+              <>
+                {/* Duration tabs */}
+                <div className="yh-tabs">
+                  {sortedPlans.map((p) => (
+                    <button
+                      key={p.id}
+                      className={`yh-tab${p.id === activeId ? " active" : ""}`}
+                      onClick={() => setActiveId(p.id)}
+                    >
+                      {p.validity_days
+                        ? `${p.validity_days} day${p.validity_days === 1 ? "" : "s"}`
+                        : p.name}
+                      {p.id === featuredId && (
+                        <span className="yh-tab-star">★</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Active plan display */}
+                {activePlan && (
+                  <div className="yh-plan-display">
+                    <div className="yh-plan-top">
+                      <div>
+                        <div className="yh-plan-name">{activePlan.name}</div>
+                        <div className="yh-plan-data-val">
+                          {activePlan.data_label}
+                        </div>
+                        <div className="yh-plan-data-unit">data</div>
+                      </div>
+                      <div className="yh-plan-price-block">
+                        <span className="yh-plan-price">
+                          {activePlan.formatted_price}
+                        </span>
+                        {activePlan.validity_days && (
+                          <span className="yh-plan-per">
+                            valid for {activePlan.validity_days} day
+                            {activePlan.validity_days === 1 ? "" : "s"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="yh-plan-specs">
+                      {specs.map((s) => (
+                        <span key={s} className="yh-spec-chip">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+
+                    {activePlan.description && (
+                      <p className="yh-plan-desc">{activePlan.description}</p>
+                    )}
+
+                    <button onClick={handleGetPlan} className="yh-plan-btn">
+                      Get this plan →
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Trust strip */}
             {!loading && !error && plans.length > 0 && (
               <div className="yh-trust">
                 {[
-                  "Secure Checkout",
-                  "Instant Delivery",
-                  "190+ Countries",
-                  "24/7 Support",
+                  "Secure checkout",
+                  "Instant delivery",
+                  "190+ countries",
+                  "24/7 support",
                 ].map((t) => (
                   <div key={t} className="yh-trust-item">
                     <div className="yh-trust-dot" />
