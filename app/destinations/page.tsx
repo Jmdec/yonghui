@@ -26,9 +26,7 @@ interface Destination {
   featured?: boolean | null;
 }
 
-// ── Country → Region mapping ──────────────────────────────────────────────────
 const COUNTRY_REGION: Record<string, string> = {
-  // Asia
   japan: "Asia",
   "south korea": "Asia",
   korea: "Asia",
@@ -59,7 +57,6 @@ const COUNTRY_REGION: Record<string, string> = {
   "southeast asia": "Asia",
   "south-east asia": "Asia",
   "se asia": "Asia",
-  // Middle East
   "united arab emirates": "Middle East",
   uae: "Middle East",
   dubai: "Middle East",
@@ -72,7 +69,6 @@ const COUNTRY_REGION: Record<string, string> = {
   kuwait: "Middle East",
   bahrain: "Middle East",
   oman: "Middle East",
-  // Europe
   france: "Europe",
   germany: "Europe",
   italy: "Europe",
@@ -97,12 +93,10 @@ const COUNTRY_REGION: Record<string, string> = {
   croatia: "Europe",
   serbia: "Europe",
   russia: "Europe",
-  // North America
   usa: "North America",
   "united states": "North America",
   canada: "North America",
   mexico: "North America",
-  // South America
   brazil: "South America",
   argentina: "South America",
   colombia: "South America",
@@ -111,7 +105,6 @@ const COUNTRY_REGION: Record<string, string> = {
   ecuador: "South America",
   venezuela: "South America",
   bolivia: "South America",
-  // Oceania
   australia: "Oceania",
   "new zealand": "Oceania",
   fiji: "Oceania",
@@ -126,7 +119,6 @@ function getRegion(name: string): string {
   return "Other";
 }
 
-// ── Region config: color + dot highlights ─────────────────────────────────────
 interface RegionConfig {
   color: string;
   bg: string;
@@ -275,14 +267,9 @@ const REGION_CONFIG: Record<string, RegionConfig> = {
       [33, 13],
     ],
   },
-  Other: {
-    color: "#888780",
-    bg: "#F1EFE8",
-    dots: [],
-  },
+  Other: { color: "#888780", bg: "#F1EFE8", dots: [] },
 };
 
-// ── Dot-grid world map (equirectangular, 36×18) ───────────────────────────────
 const LAND_KEYS = new Set([
   "4,3",
   "5,3",
@@ -404,8 +391,6 @@ const LAND_KEYS = new Set([
   "28,6",
   "29,6",
   "30,6",
-  "26,6",
-  "27,6",
   "26,7",
   "27,7",
   "26,8",
@@ -443,7 +428,6 @@ const MAP_H = ROWS * (R * 2 + GAP);
 function MiniDotMap({ regionKey }: { regionKey: string }) {
   const cfg = REGION_CONFIG[regionKey] ?? REGION_CONFIG["Other"];
   const hlSet = new Set(cfg.dots.map(([c, r]) => `${c},${r}`));
-
   const dots: React.ReactNode[] = [];
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
@@ -463,7 +447,6 @@ function MiniDotMap({ regionKey }: { regionKey: string }) {
       );
     }
   }
-
   return (
     <svg
       viewBox={`0 0 ${MAP_W} ${MAP_H}`}
@@ -476,7 +459,6 @@ function MiniDotMap({ regionKey }: { regionKey: string }) {
   );
 }
 
-// ── Region cards ──────────────────────────────────────────────────────────────
 interface RegionGroup {
   name: string;
   countries: Destination[];
@@ -521,7 +503,6 @@ function RegionCard({
   );
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 type TabType = "popular" | "regional" | "global";
 
 function Tabs({
@@ -552,7 +533,6 @@ function Tabs({
   );
 }
 
-// ── Dest card ─────────────────────────────────────────────────────────────────
 const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
   "5g": { bg: "#0066ff", color: "#fff" },
   "5G": { bg: "#0066ff", color: "#fff" },
@@ -651,7 +631,6 @@ function SkeletonCard() {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function DestinationsPage() {
   const [search, setSearch] = useState("");
   const [activeRegion, setActiveRegion] = useState("All");
@@ -670,9 +649,23 @@ export default function DestinationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // ── Auto-switch to Popular when typing (search only applies there & regional) ──
+  function handleSearch(value: string) {
+    setSearch(value);
+    if (value.trim() && activeTab === "global") {
+      setActiveTab("popular");
+    }
+  }
+
+  // ── Region groups respect search filter ───────────────────────────────────
   const regionGroups = useMemo<RegionGroup[]>(() => {
+    const sourceList = search.trim()
+      ? destinations.filter((d) =>
+          d.name.toLowerCase().includes(search.toLowerCase()),
+        )
+      : destinations;
     const map = new Map<string, Destination[]>();
-    destinations.forEach((d) => {
+    sourceList.forEach((d) => {
       const reg = d.region ?? getRegion(d.name);
       if (!map.has(reg)) map.set(reg, []);
       map.get(reg)!.push(d);
@@ -686,9 +679,7 @@ export default function DestinationsPage() {
       "Oceania",
     ];
     if (map.has("Other")) {
-      const others = map.get("Other")!;
-      const asian = map.get("Asia") ?? [];
-      map.set("Asia", [...asian, ...others]);
+      map.set("Asia", [...(map.get("Asia") ?? []), ...map.get("Other")!]);
       map.delete("Other");
     }
     return order
@@ -698,7 +689,7 @@ export default function DestinationsPage() {
         countries: map.get(r)!,
         planCount: map.get(r)!.reduce((sum, d) => sum + (d.plan_count ?? 0), 0),
       }));
-  }, [destinations]);
+  }, [destinations, search]);
 
   const regions = useMemo(() => {
     const set = new Set(destinations.map((d) => d.region ?? getRegion(d.name)));
@@ -714,11 +705,10 @@ export default function DestinationsPage() {
     let list = destinations.filter((d) =>
       d.name.toLowerCase().includes(search.toLowerCase()),
     );
-    if (activeRegion !== "All") {
+    if (activeRegion !== "All")
       list = list.filter(
         (d) => (d.region ?? getRegion(d.name)) === activeRegion,
       );
-    }
     if (sortBy === "price-asc")
       list = [...list].sort(
         (a, b) => (a.retail_price ?? 0) - (b.retail_price ?? 0),
@@ -742,37 +732,35 @@ export default function DestinationsPage() {
     }, 80);
   }
 
+  // Search is hidden on Global tab (no searchable content there)
+  const showSearch = activeTab !== "global";
+
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;600;700&family=Noto+Color+Emoji&display=swap');
-
         @keyframes cardIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
 
         .yh-page { min-height:100vh; background:#f5f5f0; font-family:'Sora',sans-serif; display:flex; flex-direction:column; }
 
         /* ── Hero (centered) ── */
-        .yh-hero {
-          background:#fff;
-          border-bottom:1px solid #e2e8f0;
-          padding:52px 32px 44px;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content:center;
-          gap:20px;
-          text-align:center;
-        }
+        .yh-hero { background:#fff; border-bottom:1px solid #e2e8f0; padding:52px 32px 44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; }
         .yh-eyebrow { display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1d6fd8; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:10px; }
         .yh-eyebrow-line { display:inline-block; width:14px; height:1px; background:#1d6fd8; }
         .yh-hero-title { font-family:'Sora',sans-serif; font-size:clamp(28px,4vw,48px); font-weight:700; color:#0a2540; line-height:1.1; margin:0; }
         .yh-hero-sub { font-family:'Sora',sans-serif; font-size:14px; color:#6b7280; margin:0; max-width:420px; line-height:1.6; }
+
+        /* Search — hidden (not removed) on Global tab so layout stays stable */
         .yh-search-wrap { position:relative; width:100%; max-width:400px; }
+        .yh-search-wrap.yh-search-hidden { visibility:hidden; pointer-events:none; }
         .yh-search-input { width:100%; box-sizing:border-box; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px 12px 42px; font-family:'Sora',sans-serif; font-size:14px; color:#0a2540; outline:none; transition:border-color .2s,box-shadow .2s; }
         .yh-search-input::placeholder { color:#b0bccf; }
         .yh-search-input:focus { border-color:#0066ff; box-shadow:0 0 0 3px rgba(0,102,255,.08); background:#fff; }
         .yh-search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:16px; color:#8a9ab5; pointer-events:none; }
+
+        /* Search hint shown in Regional tab when a query is active */
+        .yh-search-hint { display:inline-flex; align-items:center; gap:6px; background:#fff8e6; border:1px solid #f5d87a; border-radius:8px; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#92650a; margin-bottom:12px; }
 
         /* Stats */
         .yh-stats { background:#fff; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; overflow-x:auto; }
@@ -788,12 +776,11 @@ export default function DestinationsPage() {
         .yh-tab.active { background:#6c47ff; color:#fff; box-shadow:0 2px 8px rgba(108,71,255,.25); }
         .yh-tab:hover:not(.active) { background:#e5e7eb; color:#0a2540; }
 
-        /* ── Region cards grid ── */
+        /* ── Region cards ── */
         .yh-region-section { padding:24px 32px; background:#f5f5f0; }
         .yh-region-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
         @media(max-width:900px) { .yh-region-grid { grid-template-columns:repeat(2,1fr); } }
         @media(max-width:540px) { .yh-region-grid { grid-template-columns:1fr; } }
-
         .yh-region-card { display:flex; flex-direction:column; background:#fff; border:0.5px solid #e2e8f0; border-radius:14px; padding:16px; cursor:pointer; text-align:left; transition:border-color .15s,box-shadow .15s; position:relative; overflow:hidden; }
         .yh-region-card:hover { border-color:rgba(0,102,255,.3); box-shadow:0 4px 16px rgba(0,102,255,.08); }
         .yh-rc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
@@ -860,7 +847,7 @@ export default function DestinationsPage() {
         .yh-empty { grid-column:1/-1; padding:48px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#b0bccf; letter-spacing:1px; }
         .yh-section-label { display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1d6fd8; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:12px; }
 
-        /* Global eSIMs coming soon */
+        /* Global coming soon */
         .yh-global-wrap { padding:32px; display:flex; flex-direction:column; align-items:center; gap:32px; }
         .yh-global-hero { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding:48px 40px; text-align:center; width:100%; max-width:560px; box-sizing:border-box; }
         .yh-global-icon { width:56px; height:56px; border-radius:16px; background:#f0f4ff; border:1px solid #d4e0ff; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:26px; }
@@ -875,7 +862,7 @@ export default function DestinationsPage() {
         .yh-global-perk h4 { font-family:'Sora',sans-serif; font-size:13px; font-weight:600; color:#0a2540; margin:0 0 4px; }
         .yh-global-perk p { font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8a9ab5; margin:0; line-height:1.5; }
 
-        /* Mobile overrides */
+        /* Mobile */
         @media(max-width:640px) {
           .yh-hero { padding:36px 16px 32px; }
           .yh-tabs-wrap { padding:12px 16px; }
@@ -890,7 +877,7 @@ export default function DestinationsPage() {
       <div className="yh-page">
         <Navigation />
 
-        {/* Hero — centered */}
+        {/* Hero */}
         <div className="yh-hero">
           <div>
             <div className="yh-eyebrow">
@@ -899,17 +886,25 @@ export default function DestinationsPage() {
             </div>
             <h1 className="yh-hero-title">Where are you headed?</h1>
             <p className="yh-hero-sub">
-              Instant eSIMs for 17+ countries — activate before you land.
+              Instant eSIMs for {loading ? "—" : destinations.length}+ countries
+              — activate before you land.
             </p>
           </div>
-          <div className="yh-search-wrap">
+          {/* Hidden (not removed) on Global tab so layout height stays stable */}
+          <div
+            className={`yh-search-wrap${!showSearch ? " yh-search-hidden" : ""}`}
+          >
             <span className="yh-search-icon">⌕</span>
             <input
               className="yh-search-input"
               type="text"
-              placeholder="Search destination..."
+              placeholder={
+                activeTab === "regional"
+                  ? "Search region or country..."
+                  : "Search destination..."
+              }
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
         </div>
@@ -944,11 +939,23 @@ export default function DestinationsPage() {
         {/* ── Regional tab ── */}
         {activeTab === "regional" && (
           <div className="yh-region-section">
+            {search.trim() && (
+              <div>
+                <span className="yh-search-hint">
+                  🔍 Showing regions matching &ldquo;{search}&rdquo; — click a
+                  region to see all results
+                </span>
+              </div>
+            )}
             {loading ? (
               <div className="yh-region-grid">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="yh-skel" style={{ height: 160 }} />
                 ))}
+              </div>
+            ) : regionGroups.length === 0 ? (
+              <div className="yh-empty">
+                No regions match &ldquo;{search}&rdquo;
               </div>
             ) : (
               <div className="yh-region-grid">
@@ -1051,14 +1058,18 @@ export default function DestinationsPage() {
               {!loading && filtered.length > 0 && (
                 <div className="yh-section-label">
                   <span className="yh-eyebrow-line" />
-                  All destinations
+                  {search.trim()
+                    ? `Results for "${search}"`
+                    : "All destinations"}
                 </div>
               )}
               <div className="yh-dest-grid">
                 {loading ? (
                   [...Array(10)].map((_, i) => <SkeletonCard key={i} />)
                 ) : filtered.length === 0 ? (
-                  <div className="yh-empty">No destinations found</div>
+                  <div className="yh-empty">
+                    No destinations found for &ldquo;{search}&rdquo;
+                  </div>
                 ) : (
                   filtered.map((dest, i) => (
                     <DestCard key={dest.id} dest={dest} index={i} />
