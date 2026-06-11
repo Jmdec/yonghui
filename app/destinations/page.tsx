@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Navigation } from "@/components/layout/nav";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Footer from "@/components/layout/footer";
 
 const API_IMG = process.env.NEXT_PUBLIC_API_IMG ?? "";
@@ -20,6 +20,26 @@ interface Destination {
   flag?: string;
   image?: string | null;
   retail_price?: number | null;
+  region?: string | null;
+  tags?: string[] | null;
+  plan_count?: number | null;
+  featured?: boolean | null;
+}
+
+const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
+  "5g": { bg: "#0066ff", color: "#ffffff" },
+  "5G": { bg: "#0066ff", color: "#ffffff" },
+  popular: { bg: "#1d9e75", color: "#ffffff" },
+  "Most popular": { bg: "#1d9e75", color: "#ffffff" },
+  new: { bg: "#bc6a08", color: "#ffffff" },
+  New: { bg: "#bc6a08", color: "#ffffff" },
+};
+
+function formatPrice(price: number) {
+  return price.toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function DestCard({ dest, index }: { dest: Destination; index: number }) {
@@ -28,8 +48,9 @@ function DestCard({ dest, index }: { dest: Destination; index: number }) {
   return (
     <Link
       href={`/destinations/${dest.slug}`}
+      id={`dest-${dest.slug}`}
       className="yh-dest-card"
-      style={{ animationDelay: `${index * 40}ms` }}
+      style={{ animationDelay: `${index * 40}ms`, scrollMarginTop: "16px" }}
     >
       <div className="yh-card-img-wrap">
         {src ? (
@@ -38,6 +59,17 @@ function DestCard({ dest, index }: { dest: Destination; index: number }) {
           <div className="yh-card-img-fallback">
             <span className="yh-flag-emoji">{dest.flag ?? "🌐"}</span>
           </div>
+        )}
+        {dest.tags?.[0] && (
+          <span
+            className="yh-card-badge"
+            style={{
+              background: BADGE_STYLES[dest.tags[0]]?.bg ?? "#0a2540",
+              color: BADGE_STYLES[dest.tags[0]]?.color ?? "#ffffff",
+            }}
+          >
+            {dest.tags[0]}
+          </span>
         )}
       </div>
 
@@ -51,13 +83,38 @@ function DestCard({ dest, index }: { dest: Destination; index: number }) {
         <div className="yh-card-right">
           {dest.retail_price != null && (
             <span className="yh-card-price">
-              from ₱{dest.retail_price.toFixed(2)}
+              from ₱{formatPrice(dest.retail_price)}
+            </span>
+          )}
+          {dest.plan_count != null && (
+            <span className="yh-card-plans">
+              {dest.plan_count} plan{dest.plan_count === 1 ? "" : "s"}
             </span>
           )}
           <div className="yh-card-arrow">→</div>
         </div>
       </div>
     </Link>
+  );
+}
+
+function TrendingPill({ dest }: { dest: Destination }) {
+  const src = imgSrc(dest.image);
+
+  return (
+    <a href={`#dest-${dest.slug}`} className="yh-trend-pill">
+      <span className="yh-trend-icon">
+        {src ? (
+          <img src={src} alt="" />
+        ) : (
+          <span className="yh-flag-emoji yh-flag-emoji-sm">
+            {dest.flag ?? "🌐"}
+          </span>
+        )}
+      </span>
+      <span className="yh-trend-name">{dest.name}</span>
+      <i className="ti ti-flame" aria-hidden="true" />
+    </a>
   );
 }
 
@@ -72,6 +129,10 @@ function SkeletonCard() {
 
 export default function DestinationsPage() {
   const [search, setSearch] = useState("");
+  const [activeRegion, setActiveRegion] = useState("All");
+  const [sortBy, setSortBy] = useState<
+    "default" | "price-asc" | "price-desc" | "name"
+  >("default");
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,9 +144,42 @@ export default function DestinationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = destinations.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const regions = useMemo(() => {
+    const set = new Set<string>();
+    destinations.forEach((d) => {
+      if (d.region) set.add(d.region);
+    });
+    return ["All", ...Array.from(set)];
+  }, [destinations]);
+
+  const featured = useMemo(() => {
+    const flagged = destinations.filter((d) => d.featured);
+    return (flagged.length > 0 ? flagged : destinations).slice(0, 3);
+  }, [destinations]);
+
+  const filtered = useMemo(() => {
+    let list = destinations.filter((d) =>
+      d.name.toLowerCase().includes(search.toLowerCase()),
+    );
+
+    if (activeRegion !== "All") {
+      list = list.filter((d) => d.region === activeRegion);
+    }
+
+    if (sortBy === "price-asc") {
+      list = [...list].sort(
+        (a, b) => (a.retail_price ?? 0) - (b.retail_price ?? 0),
+      );
+    } else if (sortBy === "price-desc") {
+      list = [...list].sort(
+        (a, b) => (b.retail_price ?? 0) - (a.retail_price ?? 0),
+      );
+    } else if (sortBy === "name") {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return list;
+  }, [destinations, search, activeRegion, sortBy]);
 
   return (
     <>
@@ -208,6 +302,132 @@ export default function DestinationsPage() {
           flex-shrink: 0;
         }
 
+        /* ── Toolbar (filters + sort) ── */
+        .yh-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 16px 32px 0;
+        }
+        .yh-chip {
+          font-family: 'Sora', sans-serif;
+          font-size: 12px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border-radius: 999px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #0a2540;
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .yh-chip:hover {
+          border-color: rgba(0,102,255,0.3);
+        }
+        .yh-chip.active {
+          background: #0066ff;
+          border-color: #0066ff;
+          color: #ffffff;
+        }
+        .yh-sort-wrap {
+          margin-left: auto;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 10px;
+          color: #8a9ab5;
+          letter-spacing: 0.5px;
+        }
+        .yh-sort-select {
+          font-family: 'Sora', sans-serif;
+          font-size: 12px;
+          font-weight: 500;
+          color: #0a2540;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 6px 10px;
+          cursor: pointer;
+          outline: none;
+        }
+        .yh-sort-select:focus {
+          border-color: #0066ff;
+        }
+
+        /* ── Trending pills ── */
+        .yh-trend-section {
+          padding: 14px 32px 0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .yh-trend-label {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px;
+          color: #8a9ab5;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          flex-shrink: 0;
+        }
+        .yh-trend-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          overflow-x: auto;
+        }
+        .yh-trend-pill {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          text-decoration: none;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 999px;
+          padding: 5px 12px 5px 5px;
+          flex-shrink: 0;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .yh-trend-pill:hover {
+          border-color: rgba(0,102,255,0.3);
+          background: #f0f6ff;
+        }
+        .yh-trend-icon {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          overflow: hidden;
+          flex-shrink: 0;
+          background: #f0f4f8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .yh-trend-icon img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .yh-flag-emoji-sm {
+          font-size: 13px;
+        }
+        .yh-trend-name {
+          font-family: 'Sora', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          color: #0a2540;
+          white-space: nowrap;
+        }
+        .yh-trend-pill .ti-flame {
+          font-size: 13px;
+          color: #f0997b;
+        }
+
         /* ── Grid ── */
         .yh-grid-section {
           width: 100%;
@@ -247,6 +467,7 @@ export default function DestinationsPage() {
           overflow: hidden;
           background: #f0f4f8;
           flex-shrink: 0;
+          position: relative;
         }
         .yh-card-img {
           width: 100%; height: 100%;
@@ -263,6 +484,18 @@ export default function DestinationsPage() {
           font-family: 'Noto Color Emoji', 'Apple Color Emoji', sans-serif !important;
           font-size: 32px;
           line-height: 1;
+        }
+
+        .yh-card-badge {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          font-family: 'Sora', sans-serif;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 3px 9px;
+          border-radius: 6px;
+          text-transform: capitalize;
         }
 
         .yh-card-body {
@@ -303,9 +536,13 @@ export default function DestinationsPage() {
         }
         .yh-card-price {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 9px;
-          color: #0066ff;
+          font-size: 10.5px;
+          font-weight: 600;
+          color: #0052cc;
           white-space: nowrap;
+          background: #eef3fb;
+          padding: 2px 6px;
+          border-radius: 6px;
         }
         .yh-card-arrow {
           width: 22px; height: 22px;
@@ -324,6 +561,13 @@ export default function DestinationsPage() {
           background: #0066ff;
           border-color: #0066ff;
           color: #ffffff;
+        }
+        .yh-card-plans {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px;
+          color: #8a9ab5;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         /* ── Skeleton ── */
@@ -356,6 +600,19 @@ export default function DestinationsPage() {
           font-size: 11px;
           color: #b0bccf;
           letter-spacing: 1px;
+        }
+
+        /* ── Section label ── */
+        .yh-section-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px;
+          color: #1d6fd8;
+          letter-spacing: 2.5px;
+          text-transform: uppercase;
+          margin-bottom: 12px;
         }
       `}</style>
 
@@ -395,16 +652,69 @@ export default function DestinationsPage() {
           </div>
           <div className="yh-stat">
             <div className="yh-stat-dot" />
-            <b>190+</b> countries
+            4G / <b>5G</b> speeds
           </div>
           <div className="yh-stat">
             <div className="yh-stat-dot" />
-            4G / <b>5G</b> speeds
+            <b>No</b> roaming fees
+          </div>
+          <div className="yh-stat">
+            <div className="yh-stat-dot" />
+            <b>24/7</b> support
           </div>
         </div>
 
+        {/* Toolbar: region filters + sort */}
+        {!loading && destinations.length > 0 && (
+          <div className="yh-toolbar">
+            {regions.map((region) => (
+              <button
+                key={region}
+                className={`yh-chip${activeRegion === region ? " active" : ""}`}
+                onClick={() => setActiveRegion(region)}
+              >
+                {region}
+              </button>
+            ))}
+            <div className="yh-sort-wrap">
+              Sort
+              <select
+                className="yh-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              >
+                <option value="default">Default</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="name">Name: A–Z</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Trending pills */}
+        {!loading && featured.length > 0 && (
+          <div className="yh-trend-section">
+            <span className="yh-trend-label">
+              <i className="ti ti-flame" aria-hidden="true" />
+              Trending
+            </span>
+            <div className="yh-trend-row">
+              {featured.map((dest) => (
+                <TrendingPill key={dest.id} dest={dest} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Grid */}
         <div className="yh-grid-section">
+          {!loading && filtered.length > 0 && (
+            <div className="yh-section-label">
+              <span className="yh-eyebrow-line" />
+              All destinations
+            </div>
+          )}
           <div className="yh-dest-grid">
             {loading ? (
               [...Array(10)].map((_, i) => <SkeletonCard key={i} />)
