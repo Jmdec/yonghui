@@ -93,7 +93,7 @@ export default function HeroSection() {
   };
 
   const stats = [
-    { n: totalCountries || "190", em: "+", l: "Countries" },
+    { n: totalCountries || "—", em: "+", l: "Countries" },
     { n: "95", em: "K", l: "Reviews" },
     { n: "4G", em: "/5G", l: "Network" },
     { n: "24", em: "/7", l: "Support" },
@@ -363,7 +363,7 @@ export default function HeroSection() {
         <div className="yh-content">
           <div className="yh-badge">
             <span className="yh-badge-dot" />
-            Global eSIM Network · {totalCountries > 0 ? totalCountries : "190"}+
+            Global eSIM Network · {totalCountries > 0 ? totalCountries : "—"}+
             Countries
           </div>
 
