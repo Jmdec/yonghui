@@ -773,8 +773,8 @@ export default function DestinationsPage() {
         .yh-tabs-wrap { background:#fff; border-bottom:1px solid #e2e8f0; padding:16px 32px; display:flex; justify-content:center; }
         .yh-tabs { display:inline-flex; gap:2px; background:#efefef; border-radius:12px; padding:5px; border:1px solid #e2e8f0; }
         .yh-tab { font-family:"Sora",sans-serif; font-size:13px; font-weight:500; padding:9px 22px; border-radius:8px; border:none; cursor:pointer; background:transparent; color:#6b7280; transition:background .18s,color .18s,box-shadow .18s; white-space:nowrap; }
-        .yh-tab.active { background:#6c47ff; color:#fff; box-shadow:0 2px 8px rgba(108,71,255,.25); }
-        .yh-tab:hover:not(.active) { background:#e5e7eb; color:#0a2540; }
+     .yh-tab.active { background:#0066ff; color:#fff; box-shadow:0 2px 8px rgba(0,102,255,.25); }
+        .yh-tab:hover:not(.active) { background:#e5e7eb; color:#0066ff; }
 
         /* ── Region cards ── */
         .yh-region-section { padding:24px 32px; background:#f5f5f0; }
