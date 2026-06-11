@@ -631,6 +631,89 @@ function SkeletonCard() {
   );
 }
 
+// ── How It Works step data ────────────────────────────────────────────────────
+const HOW_IT_WORKS_STEPS = [
+  {
+    step: "01",
+    icon: "ti-map-pin",
+    title: "Choose your destination",
+    desc: "Pick a country or region and select a data plan that fits the length and needs of your trip.",
+    color: "#1D9E75",
+    bg: "#E1F5EE",
+  },
+  {
+    step: "02",
+    icon: "ti-credit-card",
+    title: "Purchase & receive QR",
+    desc: "Pay securely online and receive your eSIM QR code instantly — straight to your email.",
+    color: "#378ADD",
+    bg: "#E6F1FB",
+  },
+  {
+    step: "03",
+    icon: "ti-qrcode",
+    title: "Scan & install",
+    desc: "Open your phone settings, scan the QR code, and install the eSIM profile in seconds.",
+    color: "#7F77DD",
+    bg: "#EEEDFE",
+  },
+  {
+    step: "04",
+    icon: "ti-wifi",
+    title: "Arrive & connect",
+    desc: "Land at your destination, activate your eSIM, and get online — no SIM card swapping ever.",
+    color: "#D85A30",
+    bg: "#FAECE7",
+  },
+];
+
+function HowItWorksSection() {
+  return (
+    <div className="yh-hiw-section">
+      {/* Section label */}
+      <div className="yh-hiw-label">
+        <span className="yh-eyebrow-line" />
+        How YH eSIM works
+      </div>
+
+      {/* Steps grid */}
+      <div className="yh-hiw-grid">
+        {HOW_IT_WORKS_STEPS.map(
+          ({ step, icon, title, desc, color, bg }, idx) => (
+            <div key={step} className="yh-hiw-card">
+              {/* Connector line — hidden on last card */}
+              {idx < HOW_IT_WORKS_STEPS.length - 1 && (
+                <span className="yh-hiw-connector" aria-hidden="true" />
+              )}
+
+              {/* Icon bubble */}
+              <div
+                className="yh-hiw-icon-wrap"
+                style={{ background: bg, border: `1px solid ${color}22` }}
+              >
+                <i
+                  className={`ti ${icon}`}
+                  style={{ color, fontSize: "20px" }}
+                  aria-hidden="true"
+                />
+              </div>
+
+              {/* Step number */}
+              <span className="yh-hiw-step" style={{ color }}>
+                {step}
+              </span>
+
+              {/* Text */}
+              <p className="yh-hiw-title">{title}</p>
+              <p className="yh-hiw-desc">{desc}</p>
+            </div>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DestinationsPage() {
   const [search, setSearch] = useState("");
   const [activeRegion, setActiveRegion] = useState("All");
@@ -649,15 +732,11 @@ export default function DestinationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Auto-switch to Popular when typing (search only applies there & regional) ──
   function handleSearch(value: string) {
     setSearch(value);
-    if (value.trim() && activeTab === "global") {
-      setActiveTab("popular");
-    }
+    if (value.trim() && activeTab === "global") setActiveTab("popular");
   }
 
-  // ── Region groups respect search filter ───────────────────────────────────
   const regionGroups = useMemo<RegionGroup[]>(() => {
     const sourceList = search.trim()
       ? destinations.filter((d) =>
@@ -732,7 +811,6 @@ export default function DestinationsPage() {
     }, 80);
   }
 
-  // Search is hidden on Global tab (no searchable content there)
   const showSearch = activeTab !== "global";
 
   return (
@@ -744,22 +822,20 @@ export default function DestinationsPage() {
 
         .yh-page { min-height:100vh; background:#f5f5f0; font-family:'Sora',sans-serif; display:flex; flex-direction:column; }
 
-        /* ── Hero (centered) ── */
+        /* ── Hero ── */
         .yh-hero { background:#fff; border-bottom:1px solid #e2e8f0; padding:52px 32px 44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; }
         .yh-eyebrow { display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1d6fd8; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:10px; }
         .yh-eyebrow-line { display:inline-block; width:14px; height:1px; background:#1d6fd8; }
         .yh-hero-title { font-family:'Sora',sans-serif; font-size:clamp(28px,4vw,48px); font-weight:700; color:#0a2540; line-height:1.1; margin:0; }
         .yh-hero-sub { font-family:'Sora',sans-serif; font-size:14px; color:#6b7280; margin:0; max-width:420px; line-height:1.6; }
 
-        /* Search — hidden (not removed) on Global tab so layout stays stable */
+        /* Search */
         .yh-search-wrap { position:relative; width:100%; max-width:400px; }
         .yh-search-wrap.yh-search-hidden { visibility:hidden; pointer-events:none; }
         .yh-search-input { width:100%; box-sizing:border-box; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px 12px 42px; font-family:'Sora',sans-serif; font-size:14px; color:#0a2540; outline:none; transition:border-color .2s,box-shadow .2s; }
         .yh-search-input::placeholder { color:#b0bccf; }
         .yh-search-input:focus { border-color:#0066ff; box-shadow:0 0 0 3px rgba(0,102,255,.08); background:#fff; }
         .yh-search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:16px; color:#8a9ab5; pointer-events:none; }
-
-        /* Search hint shown in Regional tab when a query is active */
         .yh-search-hint { display:inline-flex; align-items:center; gap:6px; background:#fff8e6; border:1px solid #f5d87a; border-radius:8px; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#92650a; margin-bottom:12px; }
 
         /* Stats */
@@ -773,7 +849,7 @@ export default function DestinationsPage() {
         .yh-tabs-wrap { background:#fff; border-bottom:1px solid #e2e8f0; padding:16px 32px; display:flex; justify-content:center; }
         .yh-tabs { display:inline-flex; gap:2px; background:#efefef; border-radius:12px; padding:5px; border:1px solid #e2e8f0; }
         .yh-tab { font-family:"Sora",sans-serif; font-size:13px; font-weight:500; padding:9px 22px; border-radius:8px; border:none; cursor:pointer; background:transparent; color:#6b7280; transition:background .18s,color .18s,box-shadow .18s; white-space:nowrap; }
-     .yh-tab.active { background:#0066ff; color:#fff; box-shadow:0 2px 8px rgba(0,102,255,.25); }
+        .yh-tab.active { background:#0066ff; color:#fff; box-shadow:0 2px 8px rgba(0,102,255,.25); }
         .yh-tab:hover:not(.active) { background:#e5e7eb; color:#0066ff; }
 
         /* ── Region cards ── */
@@ -790,6 +866,22 @@ export default function DestinationsPage() {
         .yh-rc-arrow { font-size:14px; color:#8a9ab5; }
         .yh-rc-plans { font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8a9ab5; margin-bottom:10px; }
         .yh-rc-footer { font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8a9ab5; margin-top:6px; letter-spacing:.3px; }
+
+        /* ── How It Works ── */
+        .yh-hiw-section { margin-top:32px; padding-top:28px; border-top:1px solid #e2e8f0; }
+        .yh-hiw-label { display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1d6fd8; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:20px; }
+        .yh-hiw-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; position:relative; }
+        @media(max-width:900px) { .yh-hiw-grid { grid-template-columns:repeat(2,1fr); } }
+        @media(max-width:480px) { .yh-hiw-grid { grid-template-columns:1fr; } }
+        .yh-hiw-card { background:#fff; border:0.5px solid #e2e8f0; border-radius:14px; padding:20px 18px; display:flex; flex-direction:column; gap:8px; position:relative; }
+        .yh-hiw-connector { display:none; }
+        @media(min-width:901px) {
+          .yh-hiw-connector { display:block; position:absolute; top:34px; right:-7px; width:14px; height:1px; background:#e2e8f0; z-index:1; }
+        }
+        .yh-hiw-icon-wrap { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .yh-hiw-step { font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:1.5px; }
+        .yh-hiw-title { font-family:'Sora',sans-serif; font-size:13px; font-weight:600; color:#0a2540; margin:0; line-height:1.35; }
+        .yh-hiw-desc { font-family:'Sora',sans-serif; font-size:12px; color:#6b7280; margin:0; line-height:1.6; }
 
         /* Toolbar */
         .yh-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:16px 32px 0; }
@@ -890,7 +982,6 @@ export default function DestinationsPage() {
               — activate before you land.
             </p>
           </div>
-          {/* Hidden (not removed) on Global tab so layout height stays stable */}
           <div
             className={`yh-search-wrap${!showSearch ? " yh-search-hidden" : ""}`}
           >
@@ -968,6 +1059,9 @@ export default function DestinationsPage() {
                 ))}
               </div>
             )}
+
+            {/* ── How YH eSIM Works ── */}
+            <HowItWorksSection />
           </div>
         )}
 

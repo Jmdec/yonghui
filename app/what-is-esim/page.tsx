@@ -5,38 +5,28 @@ import Footer from "@/components/layout/footer";
 import { useState } from "react";
 import Link from "next/link";
 
-// ─── TOKENS — cream/white palette with blue accents ───────────────────────────
 const T = {
-  // Backgrounds
-  pageBg: "#f7f4ef", // warm cream page base
-  surface: "#ffffff", // white cards / panels
-  surfaceHigh: "#f7f4ef", // raised elements on cards (cream)
-  infoBg: "#e8f0fd", // blue-tinted inset
-  greenBg: "#edfaf4", // green-tinted inset
-
-  // Borders
+  pageBg: "#f7f4ef",
+  surface: "#ffffff",
+  surfaceHigh: "#f7f4ef",
+  infoBg: "#e8f0fd",
+  greenBg: "#edfaf4",
   border: "#e2e6ef",
   borderAccent: "#0057d9",
-
-  // Brand colours
   primary: "#0057d9",
   primaryLight: "#e8f0fd",
   cyan: "#3b7cf6",
   green: "#00a86b",
   red: "#e03030",
-
-  // Text
   textPrimary: "#1a1f2e",
   textSecondary: "#5a6478",
   textMuted: "#9aa3b2",
 };
 
-// ─── DIVIDER ──────────────────────────────────────────────────────────────────
 const Divider = () => (
   <div style={{ height: 1, background: T.border, margin: "0 32px" }} />
 );
 
-// ─── SECTION HEADING ──────────────────────────────────────────────────────────
 function SectionHeading({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ marginBottom: 20 }}>
@@ -59,101 +49,92 @@ function SectionHeading({ title, sub }: { title: string; sub?: string }) {
   );
 }
 
-// ─── HERO ─────────────────────────────────────────────────────────────────────
+// ─── HERO — text left, travel photo right ────────────────────────────────────
 function Hero() {
   return (
     <section
       style={{
-        padding: "40px 32px 32px",
+        padding: "0 32px",
         maxWidth: 1200,
         margin: "0 auto",
         display: "grid",
-        gridTemplateColumns: "1fr auto",
-        gap: 32,
+        gridTemplateColumns: "1fr 1fr",
+        gap: 56,
         alignItems: "center",
+        minHeight: 480,
       }}
     >
-      {/* Left: text */}
-      <div>
+      {/* LEFT — text */}
+      <div style={{ padding: "56px 0" }}>
         <span
           style={{
-            display: "inline-block",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
             background: T.infoBg,
             color: T.primary,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 600,
-            letterSpacing: "0.1em",
+            letterSpacing: "0.12em",
             textTransform: "uppercase" as const,
-            padding: "4px 12px",
+            padding: "5px 13px",
             borderRadius: 999,
             border: `1px solid #c5d9fb`,
-            marginBottom: 14,
+            marginBottom: 20,
           }}
         >
-          Travel smarter
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: T.primary,
+              display: "inline-block",
+            }}
+          />
+          About YH eSIM
         </span>
 
         <h1
           style={{
             fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)",
+            fontSize: "clamp(2rem, 3.5vw, 3rem)",
             fontWeight: 700,
             color: T.textPrimary,
-            lineHeight: 1.2,
-            margin: "0 0 12px",
-            letterSpacing: "-0.02em",
+            lineHeight: 1.1,
+            margin: "0 0 6px",
+            letterSpacing: "-0.025em",
           }}
         >
-          What's an eSIM?{" "}
-          <span style={{ color: T.primary }}>Why do travellers love it?</span>
+          Connecting the world,
+        </h1>
+        <h1
+          style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: "clamp(2rem, 3.5vw, 3rem)",
+            fontWeight: 700,
+            color: T.primary,
+            lineHeight: 1.1,
+            margin: "0 0 20px",
+            letterSpacing: "-0.025em",
+          }}
+        >
+          one eSIM at a time
         </h1>
 
         <p
           style={{
             fontSize: "0.97rem",
             color: T.textSecondary,
-            lineHeight: 1.7,
-            margin: "0 0 20px",
-            maxWidth: 500,
+            lineHeight: 1.75,
+            margin: "0 0 32px",
+            maxWidth: 440,
           }}
         >
-          An eSIM is a chip already inside your phone. Download a data plan
-          before you even pack — no swapping, no airport queues, no scissors
-          needed.
+          YH eSIM was built with a single mission — make global connectivity
+          effortless, affordable, and instant. No plastic cards. No roaming
+          surprises. No borders.
         </p>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap" as const,
-            gap: 8,
-            marginBottom: 20,
-          }}
-        >
-          {[
-            { icon: "🌍", text: "200+ countries" },
-            { icon: "⚡", text: "Ready in minutes" },
-            { icon: "📱", text: "No physical SIM" },
-          ].map((item) => (
-            <span
-              key={item.text}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: T.surface,
-                border: `1px solid ${T.border}`,
-                color: T.textSecondary,
-                fontSize: 13,
-                fontWeight: 500,
-                padding: "5px 14px",
-                borderRadius: 999,
-              }}
-            >
-              {item.icon} {item.text}
-            </span>
-          ))}
-        </div>
 
         <Link
           href="/destinations"
@@ -161,69 +142,99 @@ function Hero() {
             display: "inline-block",
             background: T.primary,
             color: "#fff",
-            padding: "12px 28px",
+            padding: "13px 28px",
             borderRadius: 10,
             fontSize: "0.95rem",
             fontWeight: 600,
             textDecoration: "none",
+            marginBottom: 40,
           }}
         >
           Browse eSIM Plans →
         </Link>
+
+        {/* Stats row */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, auto)",
+            gap: 0,
+            borderTop: `1px solid ${T.border}`,
+            paddingTop: 24,
+          }}
+        >
+          {[
+            { value: "200+", label: "Countries covered" },
+            { value: "10K+", label: "Happy travellers" },
+            { value: "99.9%", label: "Uptime" },
+            { value: "24/7", label: "Support" },
+          ].map((s, i) => (
+            <div
+              key={s.label}
+              style={{
+                paddingRight: i < 3 ? 24 : 0,
+                marginRight: i < 3 ? 24 : 0,
+                borderRight: i < 3 ? `1px solid ${T.border}` : "none",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: "clamp(1.3rem, 2.5vw, 1.7rem)",
+                  fontWeight: 700,
+                  color: T.primary,
+                  lineHeight: 1,
+                  marginBottom: 4,
+                }}
+              >
+                {s.value}
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: T.textMuted,
+                  textTransform: "uppercase" as const,
+                  letterSpacing: "0.08em",
+                  lineHeight: 1.4,
+                }}
+              >
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Right: phone status card */}
+      {/* RIGHT — photo */}
       <div
         style={{
-          background: T.surface,
-          border: `1px solid ${T.border}`,
-          borderRadius: 16,
-          padding: "20px 18px",
-          minWidth: 190,
-          maxWidth: 210,
-          textAlign: "center" as const,
-          boxShadow: "0 2px 14px rgba(0,0,0,0.06)",
+          position: "relative" as const,
+          alignSelf: "stretch",
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        <div style={{ fontSize: 44, marginBottom: 14 }}>📱</div>
-        {[
-          {
-            label: "Status",
-            value: "✓ Connected",
-            color: T.primary,
-            bg: T.infoBg,
-          },
-          {
-            label: "Home SIM",
-            value: "📞 Still active",
-            color: T.textPrimary,
-            bg: T.surfaceHigh,
-          },
-          {
-            label: "Data",
-            value: "🌐 4.2 GB left",
-            color: T.green,
-            bg: T.greenBg,
-          },
-        ].map((row) => (
-          <div
-            key={row.label}
+        <div
+          style={{
+            borderRadius: 20,
+            overflow: "hidden",
+            width: "100%",
+            aspectRatio: "4/3",
+            position: "relative" as const,
+          }}
+        >
+          <img
+            src="https://images.unsplash.com/photo-1556656793-08538906a9f8?w=800&q=80&auto=format&fit=crop"
+            alt="Person using smartphone for digital connectivity"
             style={{
-              background: row.bg,
-              border: `1px solid ${T.border}`,
-              borderRadius: 8,
-              padding: "8px 10px",
-              marginBottom: 6,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
             }}
-          >
-            <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 2 }}>
-              {row.label}
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: row.color }}>
-              {row.value}
-            </div>
-          </div>
-        ))}
+          />
+        </div>
       </div>
     </section>
   );
@@ -403,7 +414,6 @@ function PhysicalVsEsim() {
         </div>
       </div>
 
-      {/* Tip */}
       <div
         style={{
           background: T.infoBg,
@@ -794,6 +804,9 @@ export default function WhatIsEsimPage() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         a:hover { opacity: 0.88; }
+        @media (max-width: 640px) {
+          section[style] { grid-template-columns: 1fr !important; }
+        }
       `}</style>
       <Navigation />
       <Hero />
