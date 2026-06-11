@@ -58,7 +58,6 @@ function Background() {
           *{ animation: none !important; transition: none !important; }
         }
       `}</style>
-      {/* Subtle warm blobs */}
       <div
         style={{
           position: "absolute",
@@ -95,7 +94,6 @@ function Background() {
           animation: "float-blob 9s ease-in-out infinite 2s",
         }}
       />
-      {/* Subtle grid */}
       <svg
         style={{
           position: "absolute",
@@ -159,7 +157,16 @@ const Label = ({ text }: { text: string }) => (
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
-function Hero() {
+function Hero({ destCount }: { destCount: number | null }) {
+  const countLabel = destCount != null ? `${destCount}+` : "190+";
+
+  const stats = [
+    { value: countLabel, label: "Countries Covered" },
+    { value: "10K+", label: "Happy Travelers" },
+    { value: "99.9%", label: "Uptime" },
+    { value: "24/7", label: "Support" },
+  ];
+
   return (
     <section
       style={{
@@ -173,136 +180,254 @@ function Hero() {
     >
       <div
         style={{
-          display: "inline-flex",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 48,
           alignItems: "center",
-          gap: 8,
-          background: "#e8f0fd",
-          border: "1px solid #c5d9fb",
-          borderRadius: 999,
-          padding: "6px 18px",
-          marginBottom: 28,
         }}
       >
-        <span
+        {/* ── Left: text ── */}
+        <div>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "#e8f0fd",
+              border: "1px solid #c5d9fb",
+              borderRadius: 999,
+              padding: "6px 18px",
+              marginBottom: 28,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "#0057d9",
+                display: "inline-block",
+                animation: "blink-dot 1.6s ease-in-out infinite",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.13em",
+                textTransform: "uppercase" as const,
+                color: "#0057d9",
+              }}
+            >
+              About YH ESIM
+            </span>
+          </div>
+
+          <h1
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "clamp(2.2rem,4vw,3.4rem)",
+              fontWeight: 800,
+              lineHeight: 1.1,
+              color: "#1a1f2e",
+              margin: "0 0 20px",
+              letterSpacing: "-0.025em",
+              animation: "fade-up .6s ease both .05s",
+            }}
+          >
+            Connecting the world,{" "}
+            <span style={{ color: "#0057d9", whiteSpace: "nowrap" }}>
+              one eSIM at a time
+            </span>
+          </h1>
+
+          <p
+            style={{
+              fontSize: "clamp(.95rem,1.8vw,1.1rem)",
+              color: "#5a6478",
+              lineHeight: 1.8,
+              maxWidth: 520,
+              marginBottom: 36,
+              animation: "fade-up .6s ease both .15s",
+            }}
+          >
+            YH ESIM was founded with a single mission — make global connectivity
+            effortless, affordable, and instant. No plastic cards. No roaming
+            surprises. No borders.
+          </p>
+
+          <Link
+            href="/destinations"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              background: "#0057d9",
+              color: "#fff",
+              padding: "14px 36px",
+              borderRadius: 12,
+              fontSize: "1rem",
+              fontWeight: 700,
+              textDecoration: "none",
+              fontFamily: "'DM Sans', sans-serif",
+              animation: "btn-pulse 3s ease-in-out infinite",
+            }}
+          >
+            Browse eSIM Plans →
+          </Link>
+
+          {/* Stats row */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4,1fr)",
+              gap: 12,
+              marginTop: 40,
+              paddingTop: 32,
+              borderTop: "1px solid #e2e6ef",
+              animation: "fade-up .6s ease both .25s",
+            }}
+          >
+            {stats.map((s) => (
+              <div key={s.label}>
+                <div
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: "2rem",
+                    fontWeight: 800,
+                    color: "#0057d9",
+                    lineHeight: 1,
+                  }}
+                >
+                  {s.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.7rem",
+                    color: "#9aa3b2",
+                    marginTop: 5,
+                    fontWeight: 600,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Right: photo ── */}
+        <div
           style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "#0057d9",
-            display: "inline-block",
-            animation: "blink-dot 1.6s ease-in-out infinite",
-          }}
-        />
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.13em",
-            textTransform: "uppercase",
-            color: "#0057d9",
+            position: "relative",
+            borderRadius: 24,
+            overflow: "hidden",
+            aspectRatio: "4/3",
+            animation: "fade-up .6s ease both .1s",
+            boxShadow: "0 8px 40px rgba(0,87,217,0.12)",
           }}
         >
-          About YH ESIM
-        </span>
-      </div>
+          <img
+            src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=900&auto=format&fit=crop&q=80"
+            alt="Traveler staying connected abroad"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
 
-      <h1
-        style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: "clamp(2.2rem,5vw,3.6rem)",
-          fontWeight: 800,
-          lineHeight: 1.1,
-          color: "#1a1f2e",
-          margin: "0 0 20px",
-          letterSpacing: "-0.025em",
-          animation: "fade-up .6s ease both .05s",
-        }}
-      >
-        Connecting the world,{" "}
-        <span style={{ color: "#0057d9", whiteSpace: "nowrap" }}>
-          one eSIM at a time
-        </span>
-      </h1>
+          {/* Subtle blue overlay tint */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, rgba(0,87,217,0.18) 0%, transparent 55%)",
+              pointerEvents: "none",
+            }}
+          />
 
-      <p
-        style={{
-          fontSize: "clamp(.95rem,1.8vw,1.1rem)",
-          color: "#5a6478",
-          lineHeight: 1.8,
-          maxWidth: 560,
-          marginBottom: 36,
-          animation: "fade-up .6s ease both .15s",
-        }}
-      >
-        YH ESIM was founded with a single mission — make global connectivity
-        effortless, affordable, and instant. No plastic cards. No roaming
-        surprises. No borders.
-      </p>
-
-      <Link
-        href="/destinations"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 10,
-          background: "#0057d9",
-          color: "#fff",
-          padding: "14px 36px",
-          borderRadius: 12,
-          fontSize: "1rem",
-          fontWeight: 700,
-          textDecoration: "none",
-          fontFamily: "'DM Sans', sans-serif",
-          animation: "btn-pulse 3s ease-in-out infinite",
-        }}
-      >
-        Browse eSIM Plans →
-      </Link>
-
-      {/* Stats row */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 12,
-          marginTop: 40,
-          paddingTop: 32,
-          borderTop: "1px solid #e2e6ef",
-          animation: "fade-up .6s ease both .25s",
-        }}
-      >
-        {[
-          { value: "190+", label: "Countries Covered" },
-          { value: "10K+", label: "Happy Travelers" },
-          { value: "99.9%", label: "Uptime" },
-          { value: "24/7", label: "Support" },
-        ].map((s) => (
-          <div key={s.label}>
+          {/* Bottom-left frosted badge */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 20,
+              left: 20,
+              background: "rgba(255,255,255,0.92)",
+              backdropFilter: "blur(12px)",
+              borderRadius: 14,
+              padding: "12px 18px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
             <div
               style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "2rem",
-                fontWeight: 800,
-                color: "#0057d9",
-                lineHeight: 1,
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "#e8f0fd",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.2rem",
+                flexShrink: 0,
               }}
             >
-              {s.value}
+              ✈️
             </div>
-            <div
-              style={{
-                fontSize: "0.7rem",
-                color: "#9aa3b2",
-                marginTop: 5,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              {s.label}
+            <div>
+              <div
+                style={{
+                  fontSize: "1.05rem",
+                  fontWeight: 800,
+                  color: "#0057d9",
+                  lineHeight: 1,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                {countLabel} Countries
+              </div>
+              <div
+                style={{
+                  fontSize: "0.7rem",
+                  color: "#9aa3b2",
+                  marginTop: 4,
+                  fontWeight: 600,
+                  textTransform: "uppercase" as const,
+                  letterSpacing: "0.07em",
+                }}
+              >
+                Instant eSIM coverage
+              </div>
             </div>
           </div>
-        ))}
+
+          {/* Top-right pill */}
+          <div
+            style={{
+              position: "absolute",
+              top: 18,
+              right: 18,
+              background: "#0057d9",
+              color: "#fff",
+              borderRadius: 999,
+              padding: "6px 16px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase" as const,
+            }}
+          >
+            Zero roaming fees
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -386,12 +511,7 @@ function EsimTech() {
 
       {/* Quick benefit pills */}
       <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 10,
-          marginBottom: 36,
-        }}
+        style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 36 }}
       >
         {[
           { icon: "⚡", text: "Instant activation" },
@@ -422,7 +542,7 @@ function EsimTech() {
         ))}
       </div>
 
-      {/* How it works — steps */}
+      {/* How it works */}
       <div
         style={{
           background: "#ffffff",
@@ -453,7 +573,6 @@ function EsimTech() {
             position: "relative",
           }}
         >
-          {/* Connector line */}
           <div
             style={{
               position: "absolute",
@@ -534,7 +653,7 @@ function EsimTech() {
         </div>
       </div>
 
-      {/* Comparison + OTA panel */}
+      {/* Comparison */}
       <div
         style={{
           display: "grid",
@@ -543,7 +662,6 @@ function EsimTech() {
           marginBottom: 20,
         }}
       >
-        {/* Physical SIM */}
         <div
           style={{
             background: "#ffffff",
@@ -598,7 +716,6 @@ function EsimTech() {
           ))}
         </div>
 
-        {/* eSIM */}
         <div
           style={{
             background: "#ffffff",
@@ -820,7 +937,6 @@ function Coverage() {
           alignItems: "start",
         }}
       >
-        {/* Coverage bars */}
         <div>
           <Label text="Global coverage" />
           <h2
@@ -913,7 +1029,6 @@ function Coverage() {
           </div>
         </div>
 
-        {/* Device compatibility */}
         <div>
           <Label text="Compatible devices" />
           <h2
@@ -969,7 +1084,7 @@ function Coverage() {
                     marginLeft: "auto",
                     fontSize: "0.68rem",
                     fontWeight: 700,
-                    textTransform: "uppercase",
+                    textTransform: "uppercase" as const,
                     letterSpacing: "0.07em",
                     padding: "3px 10px",
                     borderRadius: 999,
@@ -1175,7 +1290,6 @@ function StoryAndWhy() {
       }}
     >
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
-        {/* Timeline */}
         <div>
           <Label text="Our story" />
           <h2
@@ -1237,7 +1351,7 @@ function StoryAndWhy() {
                     fontSize: "0.68rem",
                     fontWeight: 700,
                     color: "#0057d9",
-                    textTransform: "uppercase",
+                    textTransform: "uppercase" as const,
                     letterSpacing: "0.09em",
                     marginBottom: 2,
                   }}
@@ -1268,7 +1382,6 @@ function StoryAndWhy() {
           </div>
         </div>
 
-        {/* Why choose */}
         <div>
           <Label text="Why choose YH" />
           <h2
@@ -1460,7 +1573,14 @@ function CtaBanner() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AboutPage() {
+  const [destCount, setDestCount] = useState<number | null>(null);
+
   useEffect(() => {
+    fetch("/api/destinations/active")
+      .then((r) => r.json())
+      .then((d) => setDestCount((d.data ?? []).length))
+      .catch(() => {});
+
     if (typeof window === "undefined") return;
     const prev = document.body.style.background;
     document.body.style.background = "#f7f4ef";
@@ -1482,7 +1602,7 @@ export default function AboutPage() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
       <Background />
       <Navigation />
-      <Hero />
+      <Hero destCount={destCount} />
       <Divider />
       <EsimTech />
       <Divider />

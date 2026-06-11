@@ -2,78 +2,8 @@
 
 import Link from "next/link";
 import { Navigation } from "@/components/layout/nav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
-
-function ChipVisual() {
-  return (
-    <div
-      style={{ position: "relative", width: 120, height: 88, marginBottom: 24 }}
-    >
-      <div
-        style={{
-          width: 120,
-          height: 88,
-          background:
-            "linear-gradient(135deg, #bfdbfe 0%, #93c5fd 50%, #bfdbfe 100%)",
-          borderRadius: 10,
-          border: "1px solid rgba(13,110,253,0.35)",
-          position: "relative",
-          overflow: "hidden",
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 12px rgba(13,110,253,0.12)",
-        }}
-      >
-        {[20, 44, 68].map((top) => (
-          <div
-            key={top}
-            style={{
-              position: "absolute",
-              height: 1,
-              left: 8,
-              right: 8,
-              top,
-              background: "rgba(13,110,253,0.2)",
-            }}
-          />
-        ))}
-        <div
-          style={{
-            position: "absolute",
-            width: 1,
-            top: 8,
-            bottom: 8,
-            left: 28,
-            background: "rgba(13,110,253,0.2)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: 1,
-            top: 8,
-            bottom: 8,
-            right: 28,
-            background: "rgba(13,110,253,0.2)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%,-50%)",
-            width: 40,
-            height: 30,
-            background: "linear-gradient(135deg,#93c5fd,#bfdbfe)",
-            borderRadius: 4,
-            border: "1px solid rgba(13,110,253,0.4)",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
 
 export default function SignupPage() {
   const { register } = useAuth();
@@ -85,6 +15,14 @@ export default function SignupPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [destCount, setDestCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/destinations/active")
+      .then((r) => r.json())
+      .then((d) => setDestCount((d.data ?? []).length))
+      .catch(() => {});
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -115,137 +53,319 @@ export default function SignupPage() {
     }
   };
 
+  const countLabel = destCount != null ? `${destCount}+` : "190+";
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap');
-        :root {
-          --blue: #0D6EFD; --blue-mid: #1d6fd8; --text-head: #0a2540;
-          --text-muted: #4a6a8a; --text-faint: #93b8d8;
-          --mono: 'Share Tech Mono', monospace; --display: 'Exo 2', sans-serif;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+        @keyframes float-blob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
+        @keyframes blink-dot  { 0%,100%{opacity:1} 50%{opacity:.3} }
+        @keyframes fade-up    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes btn-pulse  { 0%,100%{box-shadow:0 6px 24px rgba(0,87,217,.25)} 50%{box-shadow:0 6px 36px rgba(0,87,217,.4)} }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .auth-page { min-height: 100vh; background: linear-gradient(160deg, #dbeafe 0%, #e0f2fe 55%, #f0f9ff 100%); display: flex; flex-direction: column; font-family: var(--mono); }
-        .auth-center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 16px; }
-        .auth-card { display: flex; width: 100%; max-width: 820px; min-height: 580px; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 40px rgba(13,110,253,0.1); }
+        .sp-page {
+          min-height: 100vh;
+          background: #f7f4ef;
+          display: flex;
+          flex-direction: column;
+          font-family: 'DM Sans', sans-serif;
+          position: relative;
+          overflow: hidden;
+        }
 
-        .auth-left { width: 40%; flex-shrink: 0; background: linear-gradient(160deg, #bfdbfe 0%, #dbeafe 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; position: relative; overflow: hidden; border-right: 1px solid rgba(14,99,214,0.15); }
-        .auth-left-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(14,99,214,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(14,99,214,0.07) 1px, transparent 1px); background-size: 32px 32px; pointer-events: none; }
-        .pulse-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border-radius: 50%; border: 1px solid rgba(13,110,253,0.22); animation: chipPulse 2.6s ease-out infinite; pointer-events: none; }
-        .pulse-ring:nth-child(2) { animation-delay: 0.87s; }
-        .pulse-ring:nth-child(3) { animation-delay: 1.74s; }
-        @keyframes chipPulse { 0% { width: 80px; height: 80px; opacity: 0.7; } 100% { width: 220px; height: 220px; opacity: 0; } }
-        .data-line { position: absolute; top: 52%; left: 0; right: 0; height: 1px; background: rgba(13,110,253,0.1); overflow: visible; pointer-events: none; }
-        .data-dot { position: absolute; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: #1d6fd8; animation: dataTrav 2.4s linear infinite; }
-        .data-dot:nth-child(2) { animation-delay: 0.8s; background: #3b82f6; }
-        .data-dot:nth-child(3) { animation-delay: 1.6s; background: #60a5fa; }
-        @keyframes dataTrav { from { left: -4px; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { left: 100%; opacity: 0; } }
-        .signal-arc { position: absolute; right: 28px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 5px; align-items: center; }
-        .arc { border: 2px solid transparent; border-right-color: rgba(13,110,253,0.45); border-top-color: rgba(13,110,253,0.45); border-radius: 50%; animation: arcPulse 1.8s ease-in-out infinite; }
-        .arc-1 { width: 14px; height: 14px; }
-        .arc-2 { width: 24px; height: 24px; animation-delay: 0.2s; }
-        .arc-3 { width: 34px; height: 34px; animation-delay: 0.4s; }
-        @keyframes arcPulse { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
-        .auth-left-label { font-size: 9px; letter-spacing: 3px; color: var(--blue-mid); margin-bottom: 6px; position: relative; z-index: 1; }
-        .auth-left-title { font-family: var(--display); font-size: 24px; font-weight: 900; color: var(--text-head); letter-spacing: -0.5px; line-height: 1; text-align: center; margin-bottom: 4px; position: relative; z-index: 1; }
-        .auth-left-title span { color: var(--blue); }
-        .auth-left-sub { font-size: 9px; color: var(--text-muted); letter-spacing: 1.5px; text-align: center; margin-bottom: 22px; position: relative; z-index: 1; }
-        .chip-stats { display: flex; gap: 10px; margin-top: 6px; position: relative; z-index: 1; }
-        .chip-stat { text-align: center; border: 1px solid rgba(13,110,253,0.18); border-radius: 6px; padding: 8px 10px; background: rgba(255,255,255,0.5); }
-        .chip-stat-val { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--blue); }
-        .chip-stat-label { font-size: 8px; color: var(--text-muted); letter-spacing: 1px; }
+        .sp-bg-blob-1 {
+          position: fixed;
+          top: -100px; left: 50%;
+          transform: translateX(-50%);
+          width: 1100px; height: 650px;
+          background: radial-gradient(ellipse, rgba(0,87,217,.06) 0%, transparent 65%);
+          pointer-events: none; z-index: 0;
+        }
+        .sp-bg-blob-2 {
+          position: fixed;
+          bottom: 5%; right: -80px;
+          width: 480px; height: 420px;
+          background: radial-gradient(ellipse, rgba(0,87,217,.04) 0%, transparent 70%);
+          animation: float-blob 9s ease-in-out infinite 2s;
+          pointer-events: none; z-index: 0;
+        }
+        .sp-bg-grid {
+          position: fixed; inset: 0;
+          pointer-events: none; z-index: 0;
+        }
 
-        .auth-right { flex: 1; background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); display: flex; flex-direction: column; justify-content: center; padding: 36px 32px; position: relative; }
-        .auth-scanbar { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--blue), transparent); animation: scanbar 3s ease-in-out infinite; opacity: 0.4; }
-        @keyframes scanbar { 0%,100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }
-        .auth-status { position: absolute; top: 10px; right: 14px; display: flex; align-items: center; gap: 5px; font-size: 8px; letter-spacing: 1px; color: var(--text-muted); }
-        .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; animation: statusBlink 2s ease-in-out infinite; }
-        @keyframes statusBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .auth-eyebrow { font-size: 8px; letter-spacing: 3px; color: var(--blue-mid); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-        .eyebrow-line { width: 20px; height: 1px; background: rgba(13,110,253,0.3); }
-        .auth-heading { font-family: var(--display); font-size: 22px; font-weight: 900; color: var(--text-head); letter-spacing: -0.3px; margin-bottom: 2px; }
-        .auth-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 18px; }
-        .auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .auth-field { margin-bottom: 13px; }
-        .auth-label { display: block; font-size: 9px; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
-        .auth-input { width: 100%; background: rgba(255,255,255,0.85); border: 1px solid rgba(13,110,253,0.2); border-radius: 5px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; color: var(--text-head); outline: none; transition: border-color 0.18s, box-shadow 0.18s; }
-        .auth-input::placeholder { color: var(--text-faint); }
-        .auth-input:focus { border-color: rgba(13,110,253,0.5); box-shadow: 0 0 0 3px rgba(13,110,253,0.1); }
-        .auth-error { font-size: 10px; color: #dc2626; background: rgba(220,38,38,0.07); border: 1px solid rgba(220,38,38,0.2); border-radius: 5px; padding: 8px 12px; margin-bottom: 12px; letter-spacing: 0.3px; }
-        .auth-agree { display: flex; align-items: flex-start; gap: 8px; font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 14px; line-height: 1.5; }
-        .auth-agree a { color: var(--blue); text-decoration: none; }
-        .auth-agree input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; }
-        .auth-btn { width: 100%; padding: 11px; background: var(--blue); border: none; border-radius: 5px; color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.18s, opacity 0.18s; }
-        .auth-btn:hover:not(:disabled) { background: #1a7aff; }
-        .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .auth-divider { border: none; border-top: 1px solid rgba(13,110,253,0.12); margin: 16px 0; }
-        .auth-footer-text { text-align: center; font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
-        .auth-footer-link { color: var(--blue); text-decoration: none; font-weight: 600; }
-        .auth-footer-link:hover { color: #1a7aff; }
-        @media (max-width: 640px) { .auth-left { display: none; } .auth-row { grid-template-columns: 1fr; } }
+        .sp-center {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 16px 64px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .sp-wrap {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          width: 100%;
+          max-width: 880px;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 8px 40px rgba(0,87,217,0.12);
+          animation: fade-up .55s ease both .05s;
+        }
+
+        /* LEFT — photo panel */
+        .sp-left {
+          position: relative;
+          overflow: hidden;
+          min-height: 580px;
+        }
+        .sp-left img {
+          width: 100%; height: 100%;
+          object-fit: cover; display: block;
+        }
+        .sp-left-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(160deg, rgba(0,87,217,0.45) 0%, rgba(0,30,80,0.55) 100%);
+        }
+        .sp-left-content {
+          position: absolute; inset: 0;
+          display: flex; flex-direction: column;
+          justify-content: flex-end;
+          padding: 32px;
+        }
+        .sp-left-badge {
+          display: inline-flex; align-items: center; gap: 7px;
+          background: rgba(255,255,255,0.15);
+          border: 1px solid rgba(255,255,255,0.25);
+          border-radius: 999px; padding: 5px 14px;
+          margin-bottom: 16px; width: fit-content;
+        }
+        .sp-left-badge-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #fff;
+          animation: blink-dot 1.6s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+        .sp-left-badge span {
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.12em; text-transform: uppercase; color: #fff;
+        }
+        .sp-left-heading {
+          font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+          font-weight: 800; color: #fff;
+          line-height: 1.15; margin-bottom: 10px;
+          letter-spacing: -0.02em;
+        }
+        .sp-left-sub {
+          font-size: 0.82rem; color: rgba(255,255,255,0.75);
+          line-height: 1.65; margin-bottom: 20px;
+        }
+        .sp-left-perks {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .sp-left-perk {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .sp-left-perk-icon {
+          width: 28px; height: 28px; border-radius: 50%;
+          background: rgba(255,255,255,0.15);
+          border: 1px solid rgba(255,255,255,0.25);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.85rem; flex-shrink: 0;
+        }
+        .sp-left-perk-text {
+          font-size: 0.78rem; color: rgba(255,255,255,0.85);
+          font-weight: 500; line-height: 1.4;
+        }
+
+        /* RIGHT — form panel */
+        .sp-right {
+          background: #ffffff;
+          display: flex; flex-direction: column;
+          justify-content: center;
+          padding: 44px 40px;
+        }
+        .sp-eyebrow {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: #e8f0fd; border: 1px solid #c5d9fb;
+          border-radius: 999px; padding: 5px 14px;
+          margin-bottom: 20px; width: fit-content;
+        }
+        .sp-eyebrow-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #0057d9;
+          animation: blink-dot 1.6s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+        .sp-eyebrow span {
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.12em; text-transform: uppercase; color: #0057d9;
+        }
+        .sp-heading {
+          font-size: clamp(1.4rem, 2vw, 1.75rem);
+          font-weight: 800; color: #1a1f2e;
+          letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1.15;
+        }
+        .sp-sub {
+          font-size: 0.88rem; color: #5a6478;
+          margin-bottom: 24px; line-height: 1.6;
+        }
+
+        .sp-error {
+          font-size: 0.82rem; color: #c0392b;
+          background: #fdf0ef; border: 1px solid #f5c6c1;
+          border-radius: 8px; padding: 10px 14px;
+          margin-bottom: 16px; line-height: 1.5;
+        }
+
+        .sp-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .sp-field { margin-bottom: 14px; }
+        .sp-label {
+          display: block; font-size: 0.75rem; font-weight: 700;
+          color: #1a1f2e; margin-bottom: 6px; letter-spacing: 0.02em;
+        }
+        .sp-input {
+          width: 100%;
+          background: #f7f8fb; border: 1px solid #e2e6ef;
+          border-radius: 10px; padding: 11px 14px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.92rem; color: #1a1f2e; outline: none;
+          transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+        }
+        .sp-input::placeholder { color: #b0bac8; }
+        .sp-input:focus {
+          border-color: #0057d9; background: #ffffff;
+          box-shadow: 0 0 0 3px rgba(0,87,217,0.1);
+        }
+
+        .sp-agree {
+          display: flex; align-items: flex-start; gap: 9px;
+          font-size: 0.78rem; color: #5a6478;
+          margin-bottom: 16px; line-height: 1.55;
+        }
+        .sp-agree input[type="checkbox"] {
+          margin-top: 2px; flex-shrink: 0;
+          accent-color: #0057d9;
+        }
+        .sp-agree a { color: #0057d9; text-decoration: none; font-weight: 600; }
+        .sp-agree a:hover { color: #1a6aff; }
+
+        .sp-btn {
+          width: 100%; padding: 13px;
+          background: #0057d9; border: none; border-radius: 12px;
+          color: #fff; font-family: 'DM Sans', sans-serif;
+          font-size: 0.97rem; font-weight: 700; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          animation: btn-pulse 3s ease-in-out infinite;
+          transition: background 0.18s, opacity 0.18s;
+        }
+        .sp-btn:hover:not(:disabled) { background: #1a6aff; }
+        .sp-btn:disabled { opacity: 0.6; cursor: not-allowed; animation: none; }
+
+        .sp-divider { border: none; border-top: 1px solid #e2e6ef; margin: 20px 0; }
+        .sp-footer { text-align: center; font-size: 0.85rem; color: #5a6478; }
+        .sp-footer a { color: #0057d9; font-weight: 700; text-decoration: none; }
+        .sp-footer a:hover { color: #1a6aff; }
+
+        @media (max-width: 660px) {
+          .sp-left { display: none; }
+          .sp-wrap { grid-template-columns: 1fr; max-width: 440px; }
+          .sp-right { padding: 36px 28px; }
+          .sp-row { grid-template-columns: 1fr; }
+        }
       `}</style>
 
-      <div className="auth-page">
+      <div className="sp-page">
+        <div className="sp-bg-blob-1" />
+        <div className="sp-bg-blob-2" />
+        <svg className="sp-bg-grid" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern
+              id="sgrid"
+              width="60"
+              height="60"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 60 0 L 0 0 0 60"
+                fill="none"
+                stroke="#0057d9"
+                strokeWidth="0.5"
+                opacity="0.05"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#sgrid)" />
+        </svg>
+
         <Navigation />
-        <div className="auth-center">
-          <div className="auth-card">
-            <div className="auth-left">
-              <div className="auth-left-grid" />
-              <div className="pulse-ring" />
-              <div className="pulse-ring" />
-              <div className="pulse-ring" />
-              <div className="data-line">
-                <div className="data-dot" />
-                <div className="data-dot" />
-                <div className="data-dot" />
-              </div>
-              <div className="signal-arc">
-                <div className="arc arc-3" />
-                <div className="arc arc-2" />
-                <div className="arc arc-1" />
-              </div>
-              <div className="auth-left-label">eSIM TECHNOLOGY</div>
-              <div className="auth-left-title">
-                YONG<span>HUI</span>
-              </div>
-              <div className="auth-left-sub">GLOBAL CONNECTIVITY</div>
-              <ChipVisual />
-              <div className="chip-stats">
-                <div className="chip-stat">
-                  <div className="chip-stat-val">190+</div>
-                  <div className="chip-stat-label">COUNTRIES</div>
+
+        <div className="sp-center">
+          <div className="sp-wrap">
+            {/* LEFT — photo */}
+            <div className="sp-left">
+              <img
+                src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&auto=format&fit=crop&q=80"
+                alt="Traveler exploring a new destination"
+              />
+              <div className="sp-left-overlay" />
+              <div className="sp-left-content">
+                <div className="sp-left-badge">
+                  <div className="sp-left-badge-dot" />
+                  <span>Join YH eSIM</span>
                 </div>
-                <div className="chip-stat">
-                  <div className="chip-stat-val">5G</div>
-                  <div className="chip-stat-label">SPEED</div>
+                <div className="sp-left-heading">
+                  Your next adventure
+                  <br />
+                  starts here.
                 </div>
-                <div className="chip-stat">
-                  <div className="chip-stat-val">0s</div>
-                  <div className="chip-stat-label">SETUP</div>
+                <div className="sp-left-sub">
+                  Create your free account and get connected in {countLabel}{" "}
+                  countries — no roaming fees, no plastic cards.
+                </div>
+                <div className="sp-left-perks">
+                  {[
+                    { icon: "⚡", text: "Activate in under 3 minutes" },
+                    { icon: "🌍", text: `Coverage in ${countLabel} countries` },
+                    { icon: "💰", text: "No hidden fees or surprises" },
+                    { icon: "💬", text: "24/7 support wherever you are" },
+                  ].map((p) => (
+                    <div className="sp-left-perk" key={p.text}>
+                      <div className="sp-left-perk-icon">{p.icon}</div>
+                      <div className="sp-left-perk-text">{p.text}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="auth-right">
-              <div className="auth-scanbar" />
-              <div className="auth-status">
-                <span className="status-dot" /> SECURE CONNECTION
+            {/* RIGHT — form */}
+            <div className="sp-right">
+              <div className="sp-eyebrow">
+                <div className="sp-eyebrow-dot" />
+                <span>Create account</span>
               </div>
-              <div className="auth-eyebrow">
-                <span className="eyebrow-line" /> NEW ACCOUNT
-              </div>
-              <h1 className="auth-heading">Get started</h1>
-              <p className="auth-sub">Create your YH account in seconds</p>
-
-              {error && <div className="auth-error">⚠ {error}</div>}
+              <h1 className="sp-heading">Start traveling smarter</h1>
+              <p className="sp-sub">Free to join. Ready in seconds.</p>
 
               <form onSubmit={handleSubmit}>
-                <div className="auth-row">
-                  <div className="auth-field">
-                    <label className="auth-label">Full name</label>
+                {error && <div className="sp-error">⚠ {error}</div>}
+
+                <div className="sp-row">
+                  <div className="sp-field">
+                    <label className="sp-label">Full name</label>
                     <input
-                      className="auth-input"
+                      className="sp-input"
                       type="text"
                       name="name"
                       placeholder="John Doe"
@@ -254,10 +374,10 @@ export default function SignupPage() {
                       required
                     />
                   </div>
-                  <div className="auth-field">
-                    <label className="auth-label">Email address</label>
+                  <div className="sp-field">
+                    <label className="sp-label">Email address</label>
                     <input
-                      className="auth-input"
+                      className="sp-input"
                       type="email"
                       name="email"
                       placeholder="your@email.com"
@@ -267,11 +387,12 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
-                <div className="auth-row">
-                  <div className="auth-field">
-                    <label className="auth-label">Password</label>
+
+                <div className="sp-row">
+                  <div className="sp-field">
+                    <label className="sp-label">Password</label>
                     <input
-                      className="auth-input"
+                      className="sp-input"
                       type="password"
                       name="password"
                       placeholder="••••••••"
@@ -281,10 +402,10 @@ export default function SignupPage() {
                       minLength={8}
                     />
                   </div>
-                  <div className="auth-field">
-                    <label className="auth-label">Confirm password</label>
+                  <div className="sp-field">
+                    <label className="sp-label">Confirm password</label>
                     <input
-                      className="auth-input"
+                      className="sp-input"
                       type="password"
                       name="confirmPassword"
                       placeholder="••••••••"
@@ -294,26 +415,24 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
-                <div className="auth-agree">
+
+                <div className="sp-agree">
                   <input type="checkbox" id="agree" required />
                   <label htmlFor="agree">
-                    By signing up you agree to our{" "}
+                    By creating an account you agree to our{" "}
                     <a href="#">Terms of Service</a> and{" "}
                     <a href="#">Privacy Policy</a>
                   </label>
                 </div>
-                <button type="submit" className="auth-btn" disabled={loading}>
-                  {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}{" "}
-                  {!loading && <span>→</span>}
+
+                <button type="submit" className="sp-btn" disabled={loading}>
+                  {loading ? "Creating your account…" : "Create my account →"}
                 </button>
               </form>
 
-              <hr className="auth-divider" />
-              <p className="auth-footer-text">
-                Already have an account?{" "}
-                <Link href="/auth/login" className="auth-footer-link">
-                  Sign in
-                </Link>
+              <hr className="sp-divider" />
+              <p className="sp-footer">
+                Already have an account? <Link href="/auth/login">Sign in</Link>
               </p>
             </div>
           </div>
