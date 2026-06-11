@@ -254,7 +254,11 @@ export default function DestinationsSection() {
                         <div className="yh-dest-price-row">
                           <span className="yh-dest-price-from">from</span>
                           <span className="yh-dest-price-val">
-                            ₱{d.retail_price.toFixed(2)}
+                            ₱
+                            {d.retail_price.toLocaleString("en-PH", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                           </span>
                           <span className="yh-dest-price-unit">PHP</span>
                         </div>

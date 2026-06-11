@@ -36,7 +36,14 @@ export default function WhyYonghuiSection() {
         }
       `}</style>
 
-      <div style={{ width: "100%", position: "relative", zIndex: 2 }}>
+      <div
+        style={{
+          width: "100%",
+          padding: "0 24px",
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
         <section style={{ padding: "36px 0" }}>
           {/* Tag */}
           <div
