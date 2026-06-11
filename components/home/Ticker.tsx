@@ -1,71 +1,38 @@
 "use client";
 
-const ITEMS = [
-  { text: "190+ Countries", icon: "dot", color: "#0057d9" },
-  { text: "Instant Activation", icon: "check", color: "#00a86b" },
-  { text: "4G / 5G Ready", icon: "pill", label: "5G", color: "#0057d9" },
-  { text: "No Roaming Fees", icon: "check", color: "#00a86b" },
-  { text: "eSIM Technology", icon: "pill", label: "eSIM", color: "#0057d9" },
-  { text: "Secure Encryption", icon: "dot", color: "#0057d9" },
-  { text: "24/7 Support", icon: "check", color: "#00a86b" },
-  { text: "QR Code Setup", icon: "pill", label: "QR", color: "#0057d9" },
-] as const;
+import { useEffect, useState } from "react";
 
-const ALL = [...ITEMS, ...ITEMS];
+const API_IMG = process.env.NEXT_PUBLIC_API_IMG ?? "";
 
-function Dot({ color }: { color: string }) {
-  return (
-    <span
-      style={{
-        width: 6,
-        height: 6,
-        borderRadius: "50%",
-        background: color,
-        display: "inline-block",
-        flexShrink: 0,
-      }}
-    />
-  );
+interface Destination {
+  id: number;
+  name: string;
+  slug: string;
+  flag: string;
+  image?: string | null;
 }
 
-function Check({ color }: { color: string }) {
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        fontWeight: 700,
-        color,
-        lineHeight: 1,
-        flexShrink: 0,
-      }}
-    >
-      ✓
-    </span>
-  );
-}
-
-function Pill({ label, color }: { label: string; color: string }) {
-  return (
-    <span
-      style={{
-        fontSize: 9,
-        fontWeight: 700,
-        color,
-        background: `${color}18`,
-        border: `1px solid ${color}33`,
-        borderRadius: 999,
-        padding: "1px 7px",
-        letterSpacing: "0.06em",
-        flexShrink: 0,
-        fontFamily: "inherit",
-      }}
-    >
-      {label}
-    </span>
-  );
+function imgSrc(path?: string | null) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_IMG}/${path}`;
 }
 
 export default function Ticker() {
+  const [items, setItems] = useState<Destination[]>([]);
+
+  useEffect(() => {
+    fetch("/api/destinations/active")
+      .then((r) => r.json())
+      .then((d) => {
+        const data: Destination[] = d.data ?? [];
+        setItems([...data, ...data]);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (items.length === 0) return null;
+
   return (
     <>
       <style>{`
@@ -121,47 +88,60 @@ export default function Ticker() {
           style={{
             display: "flex",
             whiteSpace: "nowrap",
-            animation: "tickerscroll 36s linear infinite",
+            animation: "tickerscroll 60s linear infinite",
             alignItems: "center",
           }}
         >
-          {ALL.map((item, i) => (
-            <span
-              key={i}
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
+          {items.map((d, i) => {
+            const src = imgSrc(d.image);
+            return (
               <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "0 24px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#1a1f2e",
-                  letterSpacing: "0.01em",
-                }}
+                key={`${d.slug}-${i}`}
+                style={{ display: "inline-flex", alignItems: "center" }}
               >
-                {item.icon === "dot" && <Dot color={item.color} />}
-                {item.icon === "check" && <Check color={item.color} />}
-                {item.icon === "pill" && (
-                  <Pill label={(item as any).label} color={item.color} />
-                )}
-                {item.text}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "0 24px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#1a1f2e",
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  {src ? (
+                    <img
+                      src={src}
+                      alt={d.name}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <span
+                      style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                    >
+                      {d.flag}
+                    </span>
+                  )}
+                  {d.name}
+                </span>
+                {/* Separator */}
+                <span
+                  style={{ color: "#d1d8e8", fontSize: 12, userSelect: "none" }}
+                >
+                  /
+                </span>
               </span>
-              {/* Separator */}
-              <span
-                style={{
-                  color: "#d1d8e8",
-                  fontSize: 12,
-                  userSelect: "none",
-                }}
-              >
-                /
-              </span>
-            </span>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>

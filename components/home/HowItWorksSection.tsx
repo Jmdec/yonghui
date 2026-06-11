@@ -28,9 +28,7 @@ export default function HowItWorksSection() {
     <>
       <style>{`
         @media (max-width: 640px) { .yh-steps-row { grid-template-columns: repeat(2, 1fr) !important; } }
-        .yh-step {
-          transition: all 0.2s;
-        }
+        .yh-step { transition: all 0.2s; }
         .yh-step:hover {
           border-color: rgba(14,99,214,0.35) !important;
           background: rgba(255,255,255,0.85) !important;
@@ -41,8 +39,7 @@ export default function HowItWorksSection() {
 
       <div
         style={{
-          maxWidth: 1100,
-          margin: "0 auto",
+          width: "100%",
           padding: "0 24px",
           position: "relative",
           zIndex: 2,
@@ -110,7 +107,6 @@ export default function HowItWorksSection() {
                   backdropFilter: "blur(6px)",
                 }}
               >
-                {/* Hover bar */}
                 <div
                   className="yh-step-bar"
                   style={{
@@ -125,8 +121,6 @@ export default function HowItWorksSection() {
                     transition: "transform 0.3s",
                   }}
                 />
-
-                {/* Step number */}
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
@@ -139,7 +133,6 @@ export default function HowItWorksSection() {
                 >
                   {s.n}
                 </div>
-
                 <div
                   style={{
                     fontFamily: "'Sora', sans-serif",

@@ -38,8 +38,7 @@ export default function DestinationsSection() {
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;600;700&family=Noto+Color+Emoji&display=swap');
 
         .yh-dest-wrap {
-          max-width: 1100px;
-          margin: 0 auto;
+          width: 100%;
           padding: 48px 24px;
           position: relative;
           z-index: 2;
@@ -47,12 +46,15 @@ export default function DestinationsSection() {
 
         .yh-dest-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 12px;
+          margin: 0 -24px;
+          width: calc(100% + 48px);
         }
 
-        @media (max-width: 900px) { .yh-dest-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { .yh-dest-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 1024px) { .yh-dest-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 700px)  { .yh-dest-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 420px)  { .yh-dest-grid { grid-template-columns: 1fr; } }
 
         .yh-dest-card {
           display: flex;

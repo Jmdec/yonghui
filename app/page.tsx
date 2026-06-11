@@ -38,14 +38,19 @@ export default function HomePage() {
       <Navigation />
       <Ticker />
       <HeroSection />
-      <Divider />
-      <DestinationsSection />
-      <Divider />
-      <EsimFeaturesSection />
-      <Divider />
-      <HowItWorksSection />
-      <Divider />
-      <WhyYonghuiSection />
+
+      {/* Padded content sections */}
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 40px" }}>
+        <Divider />
+        <DestinationsSection />
+        <Divider />
+        <EsimFeaturesSection />
+        <Divider />
+        <HowItWorksSection />
+        <Divider />
+        <WhyYonghuiSection />
+      </div>
+
       <CtaBanner />
       <Footer />
     </main>

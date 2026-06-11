@@ -228,7 +228,7 @@ function AssignCodeModal({
     }
     fetch(`/api/admin/plans/${planId}/esim-codes?status=available&per_page=200`)
       .then((r) => r.json())
-      .then((d) => setAvailableCodes(d.data ?? []))
+      .then((d) => setAvailableCodes((d as any).data ?? []))
       .catch(() => setAvailableCodes([]))
       .finally(() => setLoading(false));
   }, [order.plan?.id]);
@@ -248,11 +248,11 @@ function AssignCodeModal({
         body: JSON.stringify({ esim_code_id: selectedCodeId }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
+        const d: any = await res.json().catch(() => ({}));
         setError(d.message ?? "Failed.");
         return;
       }
-      const updated = await res.json();
+      const updated: any = await res.json();
       onAssigned(updated.order ?? { ...order, esim_code_id: selectedCodeId });
       onClose();
     } catch {
@@ -571,7 +571,7 @@ function SendCodeModal({
         credentials: "include",
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
+        const d: any = await res.json().catch(() => ({}));
         setError(d.message ?? "Failed.");
         return;
       }
@@ -815,7 +815,7 @@ function OrderDetailModal({
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
+        const d: any = await res.json().catch(() => ({}));
         setActionError(d.message ?? "Something went wrong.");
         return;
       }
@@ -1382,7 +1382,7 @@ export default function AdminOrdersPage() {
         return;
       }
       if (!res.ok) throw new Error("Failed to fetch orders.");
-      const data = await res.json();
+      const data: any = await res.json();
       setOrders(data.data ?? data ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -1656,7 +1656,7 @@ export default function AdminOrdersPage() {
                     type="text"
                     placeholder="Search by name, email, reference…"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e: any) => setSearchQuery(e.target.value)}
                     style={{
                       width: "100%",
                       padding: "9px 12px 9px 30px",

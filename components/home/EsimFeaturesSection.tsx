@@ -49,8 +49,7 @@ export default function EsimFeaturesSection() {
 
       <div
         style={{
-          maxWidth: 1100,
-          margin: "0 auto",
+          width: "100%",
           padding: "0 24px",
           position: "relative",
           zIndex: 2,
@@ -119,7 +118,6 @@ export default function EsimFeaturesSection() {
                   backdropFilter: "blur(6px)",
                 }}
               >
-                {/* Animated top border line */}
                 <div
                   className="yh-feat-topline"
                   style={{
@@ -132,8 +130,6 @@ export default function EsimFeaturesSection() {
                     transition: "width 0.4s ease",
                   }}
                 />
-
-                {/* Icon */}
                 <div
                   style={{
                     width: 36,
@@ -151,7 +147,6 @@ export default function EsimFeaturesSection() {
                 >
                   <i className={`ti ${c.icon}`} aria-hidden="true" />
                 </div>
-
                 <div
                   style={{
                     fontFamily: "'Sora', sans-serif",

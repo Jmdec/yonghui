@@ -17,15 +17,7 @@ export default function CtaBanner() {
         }
       `}</style>
 
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "0 24px 36px",
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
+      <div style={{ width: "100%", position: "relative", zIndex: 2 }}>
         <div
           style={{
             position: "relative",

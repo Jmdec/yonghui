@@ -210,10 +210,8 @@ export default function DestinationsPage() {
 
         /* ── Grid ── */
         .yh-grid-section {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 24px 32px 48px;
           width: 100%;
+          padding: 24px 32px 48px;
           box-sizing: border-box;
           flex: 1;
         }
