@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const LARAVEL_API = process.env.LARAVEL_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function GET(
-  req: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const { slug } = await params;
   try {
-    const res = await fetch(`${LARAVEL_API}/api/destinations/${slug}/plans`);
+    const { slug } = await params;
+    const res = await fetch(`${API_URL}/api/destinations/${slug}/plans`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
     const text = await res.text();
     try {
       const data = JSON.parse(text);
@@ -21,6 +27,9 @@ export async function GET(
     }
   } catch (err) {
     console.error("PROXY ERROR:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json(
+      { message: "Failed to fetch destination plans" },
+      { status: 500 },
+    );
   }
 }
