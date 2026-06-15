@@ -24,8 +24,6 @@ interface EditDialogState {
   newStock: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
 // ── Edit Dialog ───────────────────────────────────────────────────────────────
 function EditStockDialog({
   state,
@@ -74,7 +72,6 @@ function EditStockDialog({
             "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -116,7 +113,6 @@ function EditStockDialog({
           </button>
         </div>
 
-        {/* Current stock */}
         <div
           style={{
             backgroundColor: "#F8FAFF",
@@ -136,7 +132,6 @@ function EditStockDialog({
           </span>
         </div>
 
-        {/* Input */}
         <label
           style={{
             display: "block",
@@ -170,7 +165,6 @@ function EditStockDialog({
           }}
         />
 
-        {/* Actions */}
         <div
           style={{
             display: "flex",
@@ -239,14 +233,15 @@ export default function InventoryPage() {
   async function fetchPlans() {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/plans`);
+      // ✅ Relative path — goes through Next.js (public route, no auth needed)
+      const response = await fetch(`/api/plans`);
       if (!response.ok) throw new Error("Failed to fetch plans");
       const data = await response.json();
 
       const allPlans: Plan[] = (data.data || []).map((plan: any) => ({
         id: plan.id,
         destination_id: plan.destination_id,
-        destination_name: plan.destination?.name ?? "",
+        destination_name: plan.destination_name ?? plan.destination?.name ?? "",
         name: plan.name,
         data_label: plan.data_label,
         retail_price: plan.retail_price,
@@ -269,7 +264,6 @@ export default function InventoryPage() {
   async function handleSave(newStock: number) {
     if (!editDialog) return;
 
-    // Close dialog immediately so the toast is visible (not hidden behind the overlay)
     const snapshot = { ...editDialog };
     setEditDialog(null);
     setSaving(true);
@@ -277,8 +271,9 @@ export default function InventoryPage() {
     const toastId = toast.loading("Updating stock…");
 
     try {
+      // ✅ Relative path — goes through Next.js proxy which forwards the cookie
       const response = await fetch(
-        `${API_URL}/api/admin/destinations/${snapshot.destinationId}/plans/${snapshot.planId}`,
+        `/api/admin/destinations/${snapshot.destinationId}/plans/${snapshot.planId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -308,14 +303,12 @@ export default function InventoryPage() {
     }
   }
 
-  // Filter
   const filteredPlans = plans.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.destination_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Sort: group by destination first, then apply secondary sort within each group
   const sortedPlans = useMemo(() => {
     const grouped: Record<string, Plan[]> = {};
     filteredPlans.forEach((plan) => {
@@ -335,7 +328,6 @@ export default function InventoryPage() {
       .flatMap((key) => grouped[key]);
   }, [filteredPlans, sortBy]);
 
-  // Build rowSpan map
   const rowSpanMap = useMemo(() => {
     const map: Record<number, number> = {};
     const seen = new Set<string>();
@@ -360,11 +352,9 @@ export default function InventoryPage() {
     <div
       style={{ minHeight: "100vh", backgroundColor: "#F8FAFF", padding: 20 }}
     >
-      {/* Toaster lives here so it's always mounted with this page */}
       <Toaster position="top-right" richColors closeButton />
 
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <h1
             style={{
@@ -381,7 +371,6 @@ export default function InventoryPage() {
           </p>
         </div>
 
-        {/* Stats */}
         <div
           style={{
             display: "grid",
@@ -399,7 +388,6 @@ export default function InventoryPage() {
           />
         </div>
 
-        {/* Controls */}
         <div
           style={{
             display: "flex",
@@ -464,7 +452,6 @@ export default function InventoryPage() {
           </button>
         </div>
 
-        {/* Table */}
         {loading ? (
           <div style={{ textAlign: "center", padding: 40, color: "#6B7A99" }}>
             Loading inventory...
@@ -640,7 +627,6 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {/* Footer */}
         <div
           style={{
             marginTop: 20,
@@ -657,7 +643,6 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
       {editDialog && (
         <EditStockDialog
           state={editDialog}

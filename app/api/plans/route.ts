@@ -4,24 +4,29 @@ const LARAVEL_API = process.env.LARAVEL_API_URL ?? "http://localhost:8000";
 
 export async function GET(req: NextRequest) {
   try {
-    // Get all destinations first
     const destRes = await fetch(`${LARAVEL_API}/api/destinations`);
-    const destText = await destRes.text();
-    const destinations = JSON.parse(destText);
+    const destinations = await destRes.json();
 
-    // Fetch plans for each destination
+    const destList = destinations.data || destinations;
     const allPlans = [];
-    for (const destination of destinations.data || destinations) {
-      const plansRes = await fetch(
-        `${LARAVEL_API}/api/destinations/${destination.id}/plans`,
-      );
-      const plansText = await plansRes.text();
-      const plans = JSON.parse(plansText);
 
-      const plansList = Array.isArray(plans) ? plans : plans.data || [];
+    for (const destination of destList) {
+      const plansRes = await fetch(
+        `${LARAVEL_API}/api/destinations/${destination.slug}/plans`,
+      );
+
+      if (!plansRes.ok) continue;
+
+      const plans = await plansRes.json();
+
+      // ✅ Laravel returns { destination: {...}, plans: [...] }
+      const plansList =
+        plans.plans || plans.data || (Array.isArray(plans) ? plans : []);
+
       allPlans.push(
         ...plansList.map((plan: any) => ({
           ...plan,
+          destination_id: destination.id,
           destination_name: destination.name,
           destination_slug: destination.slug,
         })),
