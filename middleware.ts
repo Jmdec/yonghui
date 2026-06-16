@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/auth/signup",
   "/about",
   "/contact",
+  "/product",
   "/support",
   "/destinations",
   "/what-is-esim",
