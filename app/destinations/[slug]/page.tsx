@@ -70,10 +70,13 @@ export default function DestinationDetailPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  // Sort by validity_days first, then by data_gb so same-duration plans go small → large
   const sortedPlans = useMemo(
     () =>
       [...plans].sort(
-        (a, b) => (a.validity_days ?? 0) - (b.validity_days ?? 0),
+        (a, b) =>
+          (a.validity_days ?? 0) - (b.validity_days ?? 0) ||
+          (a.data_gb ?? 0) - (b.data_gb ?? 0),
       ),
     [plans],
   );
@@ -129,6 +132,14 @@ export default function DestinationDetailPage() {
         activePlan.has_voice ? "Voice" : null,
       ].filter(Boolean) as string[])
     : [];
+
+  // Build a tab label that includes GB so duplicate durations are distinguishable
+  function tabLabel(p: Plan): string {
+    const duration = p.validity_days
+      ? `${p.validity_days} day${p.validity_days === 1 ? "" : "s"}`
+      : p.name;
+    return `${duration} · ${p.data_label}`;
+  }
 
   return (
     <>
@@ -297,16 +308,20 @@ export default function DestinationDetailPage() {
         }
         .yh-tab {
           position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
           font-family: 'Sora', sans-serif;
-          font-size: 13px;
-          font-weight: 600;
           color: #0a2540;
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 10px;
-          padding: 10px 16px;
+          padding: 8px 14px;
           cursor: pointer;
           transition: border-color 0.15s, background 0.15s, color 0.15s;
+          min-width: 72px;
+          text-align: center;
         }
         .yh-tab:hover {
           border-color: rgba(0,102,255,0.3);
@@ -315,6 +330,23 @@ export default function DestinationDetailPage() {
           background: #0066ff;
           border-color: #0066ff;
           color: #ffffff;
+        }
+        .yh-tab-duration {
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.2;
+          white-space: nowrap;
+        }
+        .yh-tab-gb {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.3px;
+          opacity: 0.65;
+          white-space: nowrap;
+        }
+        .yh-tab.active .yh-tab-gb {
+          opacity: 0.8;
         }
         .yh-tab-star {
           position: absolute;
@@ -576,7 +608,7 @@ export default function DestinationDetailPage() {
           <div className="yh-main">
             {!loading && !error && destination && (
               <div className="yh-section-header">
-                <span className="yh-section-label">Choose your duration</span>
+                <span className="yh-section-label">Choose your plan</span>
                 <span className="yh-section-count">
                   {plans.length} plan{plans.length !== 1 ? "s" : ""} available
                 </span>
@@ -595,7 +627,7 @@ export default function DestinationDetailPage() {
 
             {!loading && !error && destination && sortedPlans.length > 0 && (
               <>
-                {/* Duration tabs */}
+                {/* Duration + GB tabs */}
                 <div className="yh-tabs">
                   {sortedPlans.map((p) => (
                     <button
@@ -603,9 +635,12 @@ export default function DestinationDetailPage() {
                       className={`yh-tab${p.id === activeId ? " active" : ""}`}
                       onClick={() => setActiveId(p.id)}
                     >
-                      {p.validity_days
-                        ? `${p.validity_days} day${p.validity_days === 1 ? "" : "s"}`
-                        : p.name}
+                      <span className="yh-tab-duration">
+                        {p.validity_days
+                          ? `${p.validity_days} day${p.validity_days === 1 ? "" : "s"}`
+                          : p.name}
+                      </span>
+                      <span className="yh-tab-gb">{p.data_label}</span>
                       {p.id === featuredId && (
                         <span className="yh-tab-star">★</span>
                       )}

@@ -1,23 +1,10 @@
 // app/api/checkout/route.ts
-//
-// This is the SINGLE checkout endpoint for all payment methods.
-//
-// ┌─────────────────────────────────────────────────────────────────┐
-// │  GCash / Maya / Bank  →  create order in Laravel (pending)     │
-// │                          user uploads receipt separately        │
-// │                                                                 │
-// │  Card (now dev mode)  →  create order in Laravel (pending)     │
-// │                                                                 │
-// │  Card (Payso ready)   →  create order → hit Payso API →        │
-// │                          return checkout_url to frontend        │
-// │                          Payso webhook auto-confirms payment    │
-// └─────────────────────────────────────────────────────────────────┘
 
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const LARAVEL_API = process.env.LARAVEL_API_URL ?? "http://localhost:8000/api";
-const PAYSO_ENABLED = process.env.PAYSO_ENABLED === "true"; // flip to true when ready
+const LARAVEL_API = process.env.LARAVEL_API_URL ?? "http://localhost:8000";
+const PAYSO_ENABLED = process.env.PAYSO_ENABLED === "true";
 const PAYSO_API_URL =
   process.env.PAYSO_API_URL ?? "https://api.payso.com.ph/v1";
 const PAYSO_API_KEY = process.env.PAYSO_API_KEY ?? "";
@@ -89,7 +76,6 @@ export async function POST(req: NextRequest) {
     plan_id,
     payment_method,
     bank_name,
-    // card fields — only used in dev mode for record keeping
     email,
     card_name,
     card_number,
@@ -97,14 +83,16 @@ export async function POST(req: NextRequest) {
     card_cvc,
   } = body;
 
-  if (!plan_id || !payment_method) {
+  // 3. Validate — cast plan_id to integer so NaN/string slugs are caught here
+  const planIdInt = Number(plan_id);
+  if (!planIdInt || !payment_method) {
     return NextResponse.json(
-      { message: "plan_id and payment_method are required." },
+      { message: "plan_id (integer) and payment_method are required." },
       { status: 422 },
     );
   }
 
-  // 3. Create order in Laravel first (always)
+  // 4. Create order in Laravel
   let laravelResult: {
     ok: boolean;
     status: number;
@@ -112,7 +100,7 @@ export async function POST(req: NextRequest) {
   };
   try {
     laravelResult = await createLaravelOrder(token, {
-      plan_id,
+      plan_id: planIdInt, // ← always send as integer
       payment_method,
       bank_name,
       email,
@@ -141,14 +129,14 @@ export async function POST(req: NextRequest) {
   const activationToken = laravelResult.data.activation_token as string;
   const customerEmail = laravelResult.data.customer_email as string;
 
-  console.log("[checkout] Order created with activation data:", {
+  console.log("[checkout] Order created:", {
     orderId: order.id,
     hasActivationCode: !!activationCode,
     hasActivationToken: !!activationToken,
     email: customerEmail,
   });
 
-  // 4a. Manual methods (GCash / Maya / Bank) — done, user uploads receipt next
+  // 5a. Manual methods (GCash / Maya / Bank)
   if (payment_method !== "card") {
     return NextResponse.json(
       {
@@ -163,7 +151,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 4b. Card — dev mode (Payso not yet enabled)
+  // 5b. Card — dev mode (Payso not yet enabled)
   if (!PAYSO_ENABLED) {
     return NextResponse.json(
       {
@@ -178,11 +166,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 4c. Card — Payso enabled: create payment session
-  // ─────────────────────────────────────────────────────────────────────────
-  // TODO: Adjust the request body shape to match Payso's actual API docs
-  // once you have access. Keys below are placeholders.
-  // ─────────────────────────────────────────────────────────────────────────
+  // 5c. Card — Payso enabled
   let paysoRes: Response;
   try {
     paysoRes = await fetch(`${PAYSO_API_URL}/api/payments`, {
@@ -195,17 +179,15 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         amount: order.amount,
         currency: "PHP",
-        reference: order.reference, // e.g. ORD-20240601-A3X9
+        reference: order.reference,
         description: `eSIM — ${order.plan_name}`,
         redirect_url: `${FRONTEND_URL}/checkout/success?ref=${order.reference}`,
         webhook_url: `${FRONTEND_URL}/api/webhooks/payso`,
-        // metadata so the webhook can find the order:
         metadata: { order_id: order.id, reference: order.reference },
       }),
     });
   } catch (err) {
     console.error("[checkout] Payso unreachable:", err);
-    // Order exists in Laravel — don't fail the whole thing, just warn
     return NextResponse.json(
       {
         message:
@@ -250,7 +232,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Save the Payso payment ID back to Laravel so the webhook can match it
+  // Save Payso payment ID back to Laravel
   try {
     await fetch(`${LARAVEL_API}/api/orders/${order.id}/payso`, {
       method: "PATCH",
@@ -265,11 +247,9 @@ export async function POST(req: NextRequest) {
       }),
     });
   } catch (err) {
-    // Non-fatal — webhook will still work if Payso sends the reference
     console.warn("[checkout] Could not save Payso ID to Laravel:", err);
   }
 
-  // Return checkout_url → frontend redirects user to Payso hosted page
   return NextResponse.json(
     {
       message: "Order created. Redirecting to payment page.",
@@ -277,7 +257,7 @@ export async function POST(req: NextRequest) {
       activation_code: activationCode,
       activation_token: activationToken,
       customer_email: customerEmail,
-      checkout_url: paysoData.checkout_url, // frontend: window.location.href = checkout_url
+      checkout_url: paysoData.checkout_url,
     },
     { status: 201 },
   );

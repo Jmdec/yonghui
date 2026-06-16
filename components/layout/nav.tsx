@@ -27,6 +27,7 @@ export function Navigation() {
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/product", label: "Product" },
     { href: "/destinations", label: "Destinations" },
     { href: "/what-is-esim", label: "What is eSIM" },
     { href: "/about", label: "About" },

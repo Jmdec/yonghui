@@ -134,7 +134,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          plan_id: plan.id,
+          plan_id: Number(plan.id),
           payment_method: paymentMethod,
           bank_name: paymentMethod === "bank" ? selectedBank : undefined,
           email: paymentMethod === "card" ? cardData.email : undefined,
@@ -546,18 +546,32 @@ export default function CheckoutPage() {
                         <div className="co-chips">
                           <span className="co-chip">{plan.data}</span>
                           <span className="co-chip">{plan.duration}</span>
-                          <span className="co-chip">eSIM</span>
+                          <span className="co-chip">
+                            {plan.id === "usb-c-dongle-50gb"
+                              ? "USB-C Dongle"
+                              : "eSIM"}
+                          </span>
                           {plan.popular && (
                             <span className="co-chip">★ Top pick</span>
                           )}
                         </div>
                       </div>
-                      <div className="co-price-large">₱{plan.price}</div>
+                      <div className="co-price-large">
+                        ₱
+                        {plan.price.toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
                     </div>
                     <div className="co-total-row">
                       <span className="co-total-label">Total due</span>
                       <span className="co-total-price">
-                        ₱{total.toFixed(2)}
+                        ₱
+                        {total.toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
                   </>
@@ -605,7 +619,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* eSIM delivery info */}
+            {/* Delivery info — adapts label for dongle vs eSIM */}
             <div className="co-panel" style={{ marginTop: 14 }}>
               <div
                 className="co-panel-body"
@@ -625,7 +639,7 @@ export default function CheckoutPage() {
                     fontSize: 22,
                   }}
                 >
-                  📱
+                  {plan?.id === "usb-c-dongle-50gb" ? "📦" : "📱"}
                 </div>
                 <div>
                   <div
@@ -636,7 +650,9 @@ export default function CheckoutPage() {
                       marginBottom: 2,
                     }}
                   >
-                    Instant digital delivery
+                    {plan?.id === "usb-c-dongle-50gb"
+                      ? "Ships to Philippines"
+                      : "Instant digital delivery"}
                   </div>
                   <div
                     style={{
@@ -647,8 +663,9 @@ export default function CheckoutPage() {
                       lineHeight: 1.6,
                     }}
                   >
-                    Your eSIM QR code is delivered immediately after payment
-                    confirmation. No physical SIM required.
+                    {plan?.id === "usb-c-dongle-50gb"
+                      ? "Your USB-C dongle will be shipped to your Philippine address after payment confirmation."
+                      : "Your eSIM QR code is delivered immediately after payment confirmation. No physical SIM required."}
                   </div>
                 </div>
               </div>
@@ -820,7 +837,11 @@ export default function CheckoutPage() {
                     <p className="ew-name">Account name: [Merchant Name]</p>
                     {plan && (
                       <span className="ew-amount">
-                        Amount: ₱{total.toFixed(2)}
+                        Amount: ₱
+                        {total.toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     )}
                   </div>
@@ -858,7 +879,11 @@ export default function CheckoutPage() {
                           color: "#00935f",
                         }}
                       >
-                        Amount: ₱{total.toFixed(2)}
+                        Amount: ₱
+                        {total.toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     )}
                   </div>
@@ -922,7 +947,11 @@ export default function CheckoutPage() {
                         <p className="ew-name">Account name: [Merchant Name]</p>
                         {plan && (
                           <span className="ew-amount">
-                            Amount: ₱{total.toFixed(2)}
+                            Amount: ₱
+                            {total.toLocaleString("en-PH", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                           </span>
                         )}
                       </div>
@@ -1047,7 +1076,7 @@ export default function CheckoutPage() {
                   {submitting
                     ? "Processing…"
                     : plan
-                      ? `Complete purchase — ₱${total.toFixed(2)}`
+                      ? `Complete purchase — ₱${total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                       : "Complete purchase"}
                 </span>
                 <span className="co-submit-arrow">→</span>

@@ -19,7 +19,13 @@ const NAV_GROUPS = [
     items: [
       { icon: "⊕", label: "Destinations", href: "/admin/destination" },
       { icon: "≡", label: "Inventory", href: "/admin/inventory" },
+      { icon: "◫", label: "Product", href: "/admin/product-dongle" },
       { icon: "◫", label: "Orders", href: "/admin/orders" },
+      {
+        icon: "◫",
+        label: "Product Order",
+        href: "/admin/product-dongle-order",
+      },
     ],
   },
   {
