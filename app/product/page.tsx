@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { Navigation } from "@/components/layout/nav";
 import Footer from "@/components/layout/footer";
 
@@ -28,6 +29,19 @@ interface DongleProduct {
   popular: boolean;
   requires_shipping: boolean;
   is_active: boolean;
+}
+
+interface Destination {
+  id: number;
+  name: string;
+  slug: string;
+  flag?: string;
+  image?: string | null;
+  retail_price?: number | null;
+  region?: string | null;
+  tags?: string[] | null;
+  plan_count?: number | null;
+  featured?: boolean | null;
 }
 
 const STEPS = [
@@ -65,6 +79,155 @@ const SERVICES = [
   { label: "WhatsApp", icon: "💬" },
   { label: "TikTok", icon: "🎵" },
 ];
+
+const COUNTRY_REGION: Record<string, string> = {
+  japan: "Asia",
+  "south korea": "Asia",
+  korea: "Asia",
+  taiwan: "Asia",
+  "hong kong": "Asia",
+  hongkong: "Asia",
+  "hong-kong": "Asia",
+  china: "Asia",
+  "mainland china": "Asia",
+  macau: "Asia",
+  singapore: "Asia",
+  thailand: "Asia",
+  vietnam: "Asia",
+  malaysia: "Asia",
+  indonesia: "Asia",
+  philippines: "Asia",
+  cambodia: "Asia",
+  myanmar: "Asia",
+  brunei: "Asia",
+  "timor-leste": "Asia",
+  "east timor": "Asia",
+  laos: "Asia",
+  nepal: "Asia",
+  india: "Asia",
+  "sri lanka": "Asia",
+  bangladesh: "Asia",
+  "south east asia": "Asia",
+  "southeast asia": "Asia",
+  "south-east asia": "Asia",
+  "se asia": "Asia",
+  "united arab emirates": "Middle East",
+  uae: "Middle East",
+  dubai: "Middle East",
+  turkey: "Middle East",
+  israel: "Middle East",
+  jordan: "Middle East",
+  egypt: "Middle East",
+  "saudi arabia": "Middle East",
+  qatar: "Middle East",
+  kuwait: "Middle East",
+  bahrain: "Middle East",
+  oman: "Middle East",
+  france: "Europe",
+  germany: "Europe",
+  italy: "Europe",
+  spain: "Europe",
+  portugal: "Europe",
+  netherlands: "Europe",
+  switzerland: "Europe",
+  austria: "Europe",
+  greece: "Europe",
+  poland: "Europe",
+  sweden: "Europe",
+  norway: "Europe",
+  denmark: "Europe",
+  finland: "Europe",
+  "united kingdom": "Europe",
+  uk: "Europe",
+  ireland: "Europe",
+  belgium: "Europe",
+  czechia: "Europe",
+  hungary: "Europe",
+  romania: "Europe",
+  croatia: "Europe",
+  serbia: "Europe",
+  russia: "Europe",
+  usa: "North America",
+  "united states": "North America",
+  canada: "North America",
+  mexico: "North America",
+  brazil: "South America",
+  argentina: "South America",
+  colombia: "South America",
+  chile: "South America",
+  peru: "South America",
+  ecuador: "South America",
+  venezuela: "South America",
+  bolivia: "South America",
+  australia: "Oceania",
+  "new zealand": "Oceania",
+  fiji: "Oceania",
+};
+
+function getRegion(name: string): string {
+  const key = name.toLowerCase().trim();
+  if (COUNTRY_REGION[key]) return COUNTRY_REGION[key];
+  for (const [k, v] of Object.entries(COUNTRY_REGION)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return "Other";
+}
+
+interface RegionConfig {
+  color: string;
+  bg: string;
+  dots: [number, number][];
+}
+
+const REGION_CONFIG: Record<string, RegionConfig> = {
+  Asia: {
+    color: "#1D9E75",
+    bg: "#E1F5EE",
+    dots: [
+      [25, 2],
+      [26, 2],
+      [27, 2],
+      [28, 2],
+      [29, 2],
+      [25, 3],
+      [26, 3],
+      [27, 3],
+      [28, 3],
+      [29, 3],
+      [30, 3],
+      [26, 4],
+      [27, 4],
+      [28, 4],
+      [29, 4],
+      [30, 4],
+      [27, 5],
+      [28, 5],
+      [29, 5],
+      [30, 5],
+      [27, 6],
+      [28, 6],
+      [29, 6],
+      [26, 6],
+      [26, 7],
+      [27, 7],
+      [26, 8],
+      [29, 7],
+      [30, 7],
+      [29, 8],
+      [30, 8],
+      [31, 4],
+      [32, 4],
+      [31, 5],
+      [32, 5],
+    ],
+  },
+  Europe: { color: "#378ADD", bg: "#E6F1FB", dots: [] },
+  "Middle East": { color: "#D85A30", bg: "#FAECE7", dots: [] },
+  "North America": { color: "#7F77DD", bg: "#EEEDFE", dots: [] },
+  "South America": { color: "#D4537E", bg: "#FBEAF0", dots: [] },
+  Oceania: { color: "#BA7517", bg: "#FAEEDA", dots: [] },
+  Other: { color: "#888780", bg: "#F1EFE8", dots: [] },
+};
 
 function formatPrice(price: number | string) {
   // Coerce to number first — API may return price as a string.
@@ -123,10 +286,33 @@ function Skeleton({
 const DEFAULT_DESCRIPTION =
   "Dongle is a portable mobile data device that does not require changing your SIM card. Simply plug it in and start using it instantly. Ideal for business travelers between the Philippines, Mainland China, Hong Kong, and Macau. No VPN required.";
 
-export default function DonglePage() {
+type TabType = "device" | "esim";
+
+const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
+  "5g": { bg: "#0066ff", color: "#fff" },
+  "5G": { bg: "#0066ff", color: "#fff" },
+  popular: { bg: "#1d9e75", color: "#fff" },
+  "Most popular": { bg: "#1d9e75", color: "#fff" },
+  new: { bg: "#bc6a08", color: "#fff" },
+  New: { bg: "#bc6a08", color: "#fff" },
+};
+
+export default function ProductsPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("device");
+
+  // Device state
   const [product, setProduct] = useState<DongleProduct | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [deviceLoading, setDeviceLoading] = useState(true);
+  const [deviceError, setDeviceError] = useState("");
+
+  // eSIM state
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [esimLoading, setEsimLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeRegion, setActiveRegion] = useState("All");
+  const [sortBy, setSortBy] = useState<
+    "default" | "price-asc" | "price-desc" | "name"
+  >("default");
 
   useEffect(() => {
     fetch("/api/products/active")
@@ -141,8 +327,16 @@ export default function DonglePage() {
         if (!dongle) throw new Error("No dongle product found");
         setProduct(dongle);
       })
-      .catch(() => setError("Could not load product."))
-      .finally(() => setLoading(false));
+      .catch(() => setDeviceError("Could not load product."))
+      .finally(() => setDeviceLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/destinations/active")
+      .then((r) => r.json())
+      .then((d) => setDestinations(d.data ?? d ?? []))
+      .catch(() => setDestinations([]))
+      .finally(() => setEsimLoading(false));
   }, []);
 
   const handleOrderNow = () => {
@@ -165,12 +359,83 @@ export default function DonglePage() {
     window.location.href = "/checkout/dongle";
   };
 
+  // Device display
   const displayPrice = product ? `₱${formatPrice(product.price)}` : "—";
   const displayDest =
     product?.destination_name ?? "Mainland China, Hong Kong & Macau";
   const displayName = product?.name ?? "USB-C Travel Internet Dongle";
   const displayDesc = product?.description ?? null;
   const descSentences = splitSentences(displayDesc ?? DEFAULT_DESCRIPTION);
+
+  // eSIM computed values
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    if (value.trim()) setActiveTab("esim");
+  };
+
+  const regionGroups = useMemo(() => {
+    const sourceList = search.trim()
+      ? destinations.filter((d) =>
+          d.name.toLowerCase().includes(search.toLowerCase()),
+        )
+      : destinations;
+    const map = new Map<string, Destination[]>();
+    sourceList.forEach((d) => {
+      const reg = d.region ?? getRegion(d.name);
+      if (!map.has(reg)) map.set(reg, []);
+      map.get(reg)!.push(d);
+    });
+    const order = [
+      "Asia",
+      "Europe",
+      "Middle East",
+      "North America",
+      "South America",
+      "Oceania",
+    ];
+    if (map.has("Other")) {
+      map.set("Asia", [...(map.get("Asia") ?? []), ...map.get("Other")!]);
+      map.delete("Other");
+    }
+    return order
+      .filter((r) => map.has(r))
+      .map((r) => ({
+        name: r,
+        countries: map.get(r)!,
+        planCount: map.get(r)!.reduce((sum, d) => sum + (d.plan_count ?? 0), 0),
+      }));
+  }, [destinations, search]);
+
+  const regions = useMemo(() => {
+    const set = new Set(destinations.map((d) => d.region ?? getRegion(d.name)));
+    return ["All", ...Array.from(set)];
+  }, [destinations]);
+
+  const featured = useMemo(() => {
+    const flagged = destinations.filter((d) => d.featured);
+    return (flagged.length > 0 ? flagged : destinations).slice(0, 5);
+  }, [destinations]);
+
+  const filtered = useMemo(() => {
+    let list = destinations.filter((d) =>
+      d.name.toLowerCase().includes(search.toLowerCase()),
+    );
+    if (activeRegion !== "All")
+      list = list.filter(
+        (d) => (d.region ?? getRegion(d.name)) === activeRegion,
+      );
+    if (sortBy === "price-asc")
+      list = [...list].sort(
+        (a, b) => (a.retail_price ?? 0) - (b.retail_price ?? 0),
+      );
+    else if (sortBy === "price-desc")
+      list = [...list].sort(
+        (a, b) => (b.retail_price ?? 0) - (a.retail_price ?? 0),
+      );
+    else if (sortBy === "name")
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [destinations, search, activeRegion, sortBy]);
 
   // ── Data amount: could be "50", "50 GB", "50GB", etc. Always show GB.
   const rawData = product?.data_amount ?? "50";
@@ -508,358 +773,1080 @@ export default function DonglePage() {
       <div className="dp-page">
         <Navigation />
 
-        {error && <div className="dp-error">⚠ {error}</div>}
+        {/* Tabs */}
+        <div
+          style={{
+            background: "#fff",
+            borderBottom: "1px solid #e2e8f0",
+            padding: "16px 32px",
+            display: "flex",
+            justifyContent: "center",
+            gap: "2px",
+          }}
+        >
+          <button
+            onClick={() => setActiveTab("device")}
+            style={{
+              padding: "9px 22px",
+              borderRadius: "8px",
+              border: "none",
+              fontFamily: "Sora, sans-serif",
+              fontSize: "13px",
+              fontWeight: activeTab === "device" ? 600 : 500,
+              background: activeTab === "device" ? "#0066ff" : "transparent",
+              color: activeTab === "device" ? "#fff" : "#6b7280",
+              cursor: "pointer",
+              transition: "all 0.18s",
+            }}
+          >
+            Travel Dongle
+          </button>
+          <button
+            onClick={() => setActiveTab("esim")}
+            style={{
+              padding: "9px 22px",
+              borderRadius: "8px",
+              border: "none",
+              fontFamily: "Sora, sans-serif",
+              fontSize: "13px",
+              fontWeight: activeTab === "esim" ? 600 : 500,
+              background: activeTab === "esim" ? "#0066ff" : "transparent",
+              color: activeTab === "esim" ? "#fff" : "#6b7280",
+              cursor: "pointer",
+              transition: "all 0.18s",
+            }}
+          >
+            eSIM Destinations
+          </button>
+        </div>
 
-        {/* ── HERO ── */}
-        <div className="dp-hero-wrap">
-          <div className="dp-hero">
-            {/* LEFT */}
-            <div style={{ animation: "fadeUp 0.5s ease both" }}>
-              <div className="dp-eyebrow">
-                Plug &amp; Play · No SIM · No Registration
+        {deviceError && activeTab === "device" && (
+          <div className="dp-error">⚠ {deviceError}</div>
+        )}
+
+        {/* ── DEVICE TAB ── */}
+        {activeTab === "device" && (
+          <>
+            {/* ── HERO ── */}
+            <div className="dp-hero-wrap">
+              <div className="dp-hero">
+                {/* LEFT */}
+                <div style={{ animation: "fadeUp 0.5s ease both" }}>
+                  <div className="dp-eyebrow">
+                    Plug &amp; Play · No SIM · No Registration
+                  </div>
+
+                  {deviceLoading ? (
+                    <div style={{ marginBottom: 10 }}>
+                      <Skeleton w={300} h={42} />
+                    </div>
+                  ) : (
+                    <h1 className="dp-hero-title">
+                      {(() => {
+                        const match = displayName.match(
+                          /^(.*?)(Plug\s*[&＆]\s*Play.*)$/i,
+                        );
+                        if (match) {
+                          return (
+                            <>
+                              {match[1].trim()}
+                              <br />
+                              <em>{match[2]}</em>
+                            </>
+                          );
+                        }
+                        return displayName;
+                      })()}
+                    </h1>
+                  )}
+
+                  <p className="dp-hero-tagline">
+                    Portable mobile data — no SIM card or registration required
+                  </p>
+
+                  {/* Description as a short scannable list, not one dense paragraph */}
+                  {deviceLoading ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 7,
+                        marginBottom: 16,
+                      }}
+                    >
+                      <Skeleton w="100%" h={14} />
+                      <Skeleton w="90%" h={14} />
+                      <Skeleton w="70%" h={14} />
+                    </div>
+                  ) : (
+                    <div className="dp-hero-sub-list">
+                      {descSentences.map((sentence, i) => (
+                        <div key={i} className="dp-hero-sub-item">
+                          <span className="dp-hero-sub-dot" />
+                          <span>{sentence}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="dp-meta-row">
+                    <div className="dp-ph-notice">
+                      🇵🇭 &nbsp;PH pick-up or delivery only
+                    </div>
+                    <div className="dp-coverage-row">
+                      <span className="dp-cpill dp-cpill-cn">
+                        🇨🇳 Mainland China
+                      </span>
+                      <span className="dp-cpill dp-cpill-hk">🇭🇰 Hong Kong</span>
+                      <span className="dp-cpill dp-cpill-mo">🇲🇴 Macau</span>
+                    </div>
+                  </div>
+
+                  {/* Stats strip — always shows units */}
+                  <div className="dp-stats-strip">
+                    <div className="dp-stat">
+                      {deviceLoading ? (
+                        <Skeleton w={80} h={28} />
+                      ) : (
+                        <div className="dp-stat-row">
+                          <span className="dp-stat-val">{dataNum}</span>
+                          <span className="dp-stat-unit">{dataUnit}</span>
+                        </div>
+                      )}
+                      <div className="dp-stat-label">Data included</div>
+                    </div>
+                    <div className="dp-stat">
+                      {deviceLoading ? (
+                        <Skeleton w={80} h={28} />
+                      ) : (
+                        <div className="dp-stat-row">
+                          <span className="dp-stat-val">{durNum}</span>
+                          <span className="dp-stat-unit">{durUnit}</span>
+                        </div>
+                      )}
+                      <div className="dp-stat-label">
+                        Validity from first use
+                      </div>
+                    </div>
+                    <div className="dp-stat">
+                      <div className="dp-stat-row">
+                        <span className="dp-stat-val" style={{ fontSize: 18 }}>
+                          No VPN
+                        </span>
+                      </div>
+                      <div className="dp-stat-label">China-ready</div>
+                    </div>
+                  </div>
+
+                  {!deviceLoading && features.length > 0 && (
+                    <div className="dp-features-list">
+                      {features.map((f) => (
+                        <div key={f} className="dp-feature-item">
+                          <span className="dp-feature-dot" />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Price + CTA */}
+                  <div className="dp-price-cta">
+                    <div className="dp-price-block">
+                      <span className="dp-price-label">
+                        Suggested Retail Price
+                      </span>
+                      {deviceLoading ? (
+                        <Skeleton w={140} h={38} />
+                      ) : (
+                        <span className="dp-price-value">{displayPrice}</span>
+                      )}
+                      {!deviceLoading && (
+                        <span className="dp-price-note">
+                          Includes {dataNum} {dataUnit} data · {durNum}-
+                          {durUnit} validity
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleOrderNow}
+                      className="dp-cta-btn"
+                      disabled={deviceLoading || !product}
+                    >
+                      Order now →
+                    </button>
+                  </div>
+                </div>
+
+                {/* RIGHT — Gallery */}
+                <ProductGallery
+                  loading={deviceLoading}
+                  images={product?.images ?? []}
+                  name={displayName}
+                />
+              </div>
+            </div>
+
+            {/* ── BODY ── */}
+            <div className="dp-body">
+              {/* Package includes */}
+              <div>
+                <div className="dp-section-label">Package includes</div>
+                <div className="dp-box-grid">
+                  <div className="dp-box-card accent-blue">
+                    <span className="dp-box-icon">📶</span>
+                    <div>
+                      <div className="dp-box-value">
+                        {deviceLoading ? (
+                          <Skeleton w={60} h={28} />
+                        ) : (
+                          <>
+                            {dataNum}
+                            <span className="dp-box-value-unit">
+                              {dataUnit}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <p className="dp-box-title" style={{ marginTop: 4 }}>
+                        Mobile Data
+                      </p>
+                    </div>
+                    <p className="dp-box-body">
+                      High-speed data valid across Mainland China, Hong Kong,
+                      and Macau. No throttling on standard browsing and
+                      streaming.
+                    </p>
+                    <span className="dp-box-tag dp-box-tag-green">
+                      {deviceLoading ? "—" : `${dataNum} ${dataUnit} included`}
+                    </span>
+                  </div>
+                  <div className="dp-box-card accent-green">
+                    <span className="dp-box-icon">📅</span>
+                    <div>
+                      <div className="dp-box-value">
+                        {deviceLoading ? (
+                          <Skeleton w={60} h={28} />
+                        ) : (
+                          <>
+                            {durNum}
+                            <span className="dp-box-value-unit">{durUnit}</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="dp-box-title" style={{ marginTop: 4 }}>
+                        Validity Period
+                      </p>
+                    </div>
+                    <p className="dp-box-body">
+                      Countdown starts only from first use — not from purchase.
+                      Your data stays ready until you need it.
+                    </p>
+                    <span className="dp-box-tag dp-box-tag-green">
+                      {deviceLoading
+                        ? "—"
+                        : `${durNum} ${durUnit} from first use`}
+                    </span>
+                  </div>
+                  <div className="dp-box-card accent-orange">
+                    <span className="dp-box-icon">🔌</span>
+                    <div>
+                      <div className="dp-box-value" style={{ fontSize: 20 }}>
+                        USB-C
+                      </div>
+                      <p className="dp-box-title" style={{ marginTop: 4 }}>
+                        Dongle Device
+                      </p>
+                    </div>
+                    <p className="dp-box-body">
+                      Compact plug-and-play dongle compatible with any USB
+                      Type-C device. No drivers, apps, or configuration
+                      required.
+                    </p>
+                    <span className="dp-box-tag dp-box-tag-orange">
+                      PH pick-up / delivery
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {loading ? (
-                <div style={{ marginBottom: 10 }}>
-                  <Skeleton w={300} h={42} />
+              {/* How to use */}
+              <div>
+                <div className="dp-section-label">How to use</div>
+                <div className="dp-steps-grid">
+                  {STEPS.map(({ n, title, body, icon }) => (
+                    <div key={n} className="dp-step-card">
+                      <div className="dp-step-header">
+                        <span className="dp-step-icon">{icon}</span>
+                        <span className="dp-step-num">{n}</span>
+                      </div>
+                      <p className="dp-step-title">{title}</p>
+                      <p className="dp-step-body">{body}</p>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <h1 className="dp-hero-title">
-                  {(() => {
-                    const p = displayName.split(" ");
-                    const last = p.pop();
-                    return (
-                      <>
-                        {p.join(" ")}
-                        <br />
-                        <em>{last}</em>
-                      </>
-                    );
-                  })()}
+              </div>
+
+              {/* No VPN */}
+              <div>
+                <div className="dp-section-label">
+                  Open access — no VPN needed
+                </div>
+                <div className="dp-novpn-grid">
+                  <p className="dp-novpn-intro">
+                    Services normally restricted in Mainland China work out of
+                    the box. No configuration, no workarounds — just plug in and
+                    use what you need.
+                  </p>
+                  <div className="dp-services-row">
+                    {SERVICES.map(({ label, icon }) => (
+                      <div key={label} className="dp-service-chip">
+                        <span className="dp-service-icon">{icon}</span>
+                        <span className="dp-service-name">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="dp-novpn-badge">
+                    <span className="dp-novpn-dot" />
+                    Works in Mainland China, HK &amp; Macau
+                  </div>
+                </div>
+              </div>
+
+              {/* Coverage */}
+              <div>
+                <div className="dp-section-label">Coverage</div>
+                <div className="dp-coverage-grid">
+                  {[
+                    {
+                      flag: "🇨🇳",
+                      name: "Mainland China",
+                      note: "Full coverage",
+                      desc: "Nationwide coverage including Beijing, Shanghai, Shenzhen, and all major cities. Bypasses the Great Firewall — no VPN required.",
+                    },
+                    {
+                      flag: "🇭🇰",
+                      name: "Hong Kong",
+                      note: "Full coverage",
+                      desc: "Complete coverage across Hong Kong Island, Kowloon, and the New Territories.",
+                    },
+                    {
+                      flag: "🇲🇴",
+                      name: "Macau",
+                      note: "Full coverage",
+                      desc: "Full coverage across the Macau Peninsula, Taipa, and the Cotai Strip.",
+                    },
+                  ].map(({ flag, name, note, desc }) => (
+                    <div key={name} className="dp-coverage-card">
+                      <span className="dp-cov-flag">{flag}</span>
+                      <span className="dp-cov-name">{name}</span>
+                      <span className="dp-cov-note">✓ {note}</span>
+                      <p className="dp-cov-desc">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top-up */}
+              <div>
+                <div className="dp-section-label">
+                  Data top-up &amp; renewal
+                </div>
+                <div className="dp-topup-box">
+                  <div className="dp-topup-icon">📞</div>
+                  <div>
+                    <p className="dp-topup-title">Need more data?</p>
+                    <p className="dp-topup-body">
+                      If you consume all {displayData} or need additional data,
+                      please contact our customer service team. We'll walk you
+                      through the available top-up and renewal options.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom CTA */}
+              <div className="dp-cta-band">
+                <div className="dp-cta-band-left">
+                  <h2>Ready to travel without limits?</h2>
+                  <p>
+                    {displayData} · {displayDuration} · {displayDest}
+                    <br />
+                    No VPN · No SIM · No registration required
+                  </p>
+                </div>
+                <div className="dp-cta-band-right">
+                  {deviceLoading ? (
+                    <Skeleton w={140} h={32} />
+                  ) : (
+                    <p className="dp-cta-band-price">{displayPrice}</p>
+                  )}
+                  <button
+                    onClick={handleOrderNow}
+                    className="dp-cta-band-btn"
+                    disabled={deviceLoading || !product}
+                  >
+                    Order now →
+                  </button>
+                  <p className="dp-cta-band-note">
+                    🇵🇭 Pick-up or delivery · Philippines only
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Footer />
+          </>
+        )}
+
+        {/* ── ESIM TAB ── */}
+        {activeTab === "esim" && (
+          <div
+            style={{
+              minHeight: "100vh",
+              background: "#f5f5f0",
+              fontFamily: "'Sora', sans-serif",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                borderBottom: "1px solid #e2e8f0",
+                padding: "52px 32px 44px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "20px",
+                textAlign: "center",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    color: "#1d6fd8",
+                    letterSpacing: "2.5px",
+                    textTransform: "uppercase",
+                    marginBottom: "10px",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "14px",
+                      height: "1px",
+                      background: "#1d6fd8",
+                    }}
+                  />
+                  Popular destinations
+                </div>
+                <h1
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "clamp(28px, 4vw, 48px)",
+                    fontWeight: 700,
+                    color: "#0a2540",
+                    lineHeight: 1.1,
+                    margin: 0,
+                  }}
+                >
+                  Where are you headed?
                 </h1>
-              )}
+                <p
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    margin: 0,
+                    marginTop: "8px",
+                    maxWidth: "420px",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Instant eSIMs for {esimLoading ? "—" : destinations.length}+
+                  countries — activate before you land.
+                </p>
+              </div>
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: "400px",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: "16px",
+                    color: "#8a9ab5",
+                    pointerEvents: "none",
+                  }}
+                >
+                  ⌕
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search destination..."
+                  value={search}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "12px 16px 12px 42px",
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "14px",
+                    color: "#0a2540",
+                    outline: "none",
+                  }}
+                />
+              </div>
+            </div>
 
-              <p className="dp-hero-tagline">
-                Portable mobile data — no SIM card or registration required
-              </p>
+            <div
+              style={{
+                background: "#fff",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflowX: "auto",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "10px 24px",
+                  borderRight: "1px solid #e2e8f0",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  color: "#8a9ab5",
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto",
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#0066ff",
+                  }}
+                />
+                <b
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#0a2540",
+                  }}
+                >
+                  {esimLoading ? "—" : destinations.length}
+                </b>{" "}
+                destinations
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "10px 24px",
+                  borderRight: "1px solid #e2e8f0",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  color: "#8a9ab5",
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto",
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#0066ff",
+                  }}
+                />
+                Instant{" "}
+                <b
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#0a2540",
+                  }}
+                >
+                  activation
+                </b>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "10px 24px",
+                  borderRight: "1px solid #e2e8f0",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  color: "#8a9ab5",
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto",
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#0066ff",
+                  }}
+                />
+                4G /{" "}
+                <b
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#0a2540",
+                  }}
+                >
+                  5G
+                </b>{" "}
+                speeds
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "10px 24px",
+                  borderRight: "1px solid #e2e8f0",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  color: "#8a9ab5",
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto",
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#0066ff",
+                  }}
+                />
+                <b
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#0a2540",
+                  }}
+                >
+                  No
+                </b>{" "}
+                roaming fees
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "10px 24px",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  color: "#8a9ab5",
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto",
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#0066ff",
+                  }}
+                />
+                <b
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#0a2540",
+                  }}
+                >
+                  24/7
+                </b>{" "}
+                support
+              </div>
+            </div>
 
-              {/* Description as a short scannable list, not one dense paragraph */}
-              {loading ? (
+            {/* Toolbar */}
+            {!esimLoading && destinations.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                  padding: "16px 32px 0",
+                }}
+              >
+                {regions.map((region) => (
+                  <button
+                    key={region}
+                    onClick={() => setActiveRegion(region)}
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      padding: "6px 14px",
+                      borderRadius: "999px",
+                      border:
+                        activeRegion === region
+                          ? "1px solid #0066ff"
+                          : "1px solid #e2e8f0",
+                      background: activeRegion === region ? "#0066ff" : "#fff",
+                      color: activeRegion === region ? "#fff" : "#0a2540",
+                      cursor: "pointer",
+                      transition:
+                        "background 0.15s, border-color 0.15s, color 0.15s",
+                    }}
+                  >
+                    {region}
+                  </button>
+                ))}
+                <div
+                  style={{
+                    marginLeft: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "10px",
+                    color: "#8a9ab5",
+                  }}
+                >
+                  Sort
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "#0a2540",
+                      background: "#fff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="default">Default</option>
+                    <option value="price-asc">Price: low to high</option>
+                    <option value="price-desc">Price: high to low</option>
+                    <option value="name">Name: A–Z</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Grid */}
+            <div
+              style={{
+                width: "100%",
+                padding: "24px 32px 48px",
+                boxSizing: "border-box",
+                flex: 1,
+              }}
+            >
+              {!esimLoading && filtered.length > 0 && (
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "column",
-                    gap: 7,
-                    marginBottom: 16,
+                    alignItems: "center",
+                    gap: "6px",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    color: "#1d6fd8",
+                    letterSpacing: "2.5px",
+                    textTransform: "uppercase",
+                    marginBottom: "12px",
                   }}
                 >
-                  <Skeleton w="100%" h={14} />
-                  <Skeleton w="90%" h={14} />
-                  <Skeleton w="70%" h={14} />
-                </div>
-              ) : (
-                <div className="dp-hero-sub-list">
-                  {descSentences.map((sentence, i) => (
-                    <div key={i} className="dp-hero-sub-item">
-                      <span className="dp-hero-sub-dot" />
-                      <span>{sentence}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="dp-meta-row">
-                <div className="dp-ph-notice">
-                  🇵🇭 &nbsp;PH pick-up or delivery only
-                </div>
-                <div className="dp-coverage-row">
-                  <span className="dp-cpill dp-cpill-cn">
-                    🇨🇳 Mainland China
-                  </span>
-                  <span className="dp-cpill dp-cpill-hk">🇭🇰 Hong Kong</span>
-                  <span className="dp-cpill dp-cpill-mo">🇲🇴 Macau</span>
-                </div>
-              </div>
-
-              {/* Stats strip — always shows units */}
-              <div className="dp-stats-strip">
-                <div className="dp-stat">
-                  {loading ? (
-                    <Skeleton w={80} h={28} />
-                  ) : (
-                    <div className="dp-stat-row">
-                      <span className="dp-stat-val">{dataNum}</span>
-                      <span className="dp-stat-unit">{dataUnit}</span>
-                    </div>
-                  )}
-                  <div className="dp-stat-label">Data included</div>
-                </div>
-                <div className="dp-stat">
-                  {loading ? (
-                    <Skeleton w={80} h={28} />
-                  ) : (
-                    <div className="dp-stat-row">
-                      <span className="dp-stat-val">{durNum}</span>
-                      <span className="dp-stat-unit">{durUnit}</span>
-                    </div>
-                  )}
-                  <div className="dp-stat-label">Validity from first use</div>
-                </div>
-                <div className="dp-stat">
-                  <div className="dp-stat-row">
-                    <span className="dp-stat-val" style={{ fontSize: 18 }}>
-                      No VPN
-                    </span>
-                  </div>
-                  <div className="dp-stat-label">China-ready</div>
-                </div>
-              </div>
-
-              {!loading && features.length > 0 && (
-                <div className="dp-features-list">
-                  {features.map((f) => (
-                    <div key={f} className="dp-feature-item">
-                      <span className="dp-feature-dot" />
-                      {f}
-                    </div>
-                  ))}
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "14px",
+                      height: "1px",
+                      background: "#1d6fd8",
+                    }}
+                  />
+                  {search.trim()
+                    ? `Results for "${search}"`
+                    : "All destinations"}
                 </div>
               )}
-
-              {/* Price + CTA */}
-              <div className="dp-price-cta">
-                <div className="dp-price-block">
-                  <span className="dp-price-label">Suggested Retail Price</span>
-                  {loading ? (
-                    <Skeleton w={140} h={38} />
-                  ) : (
-                    <span className="dp-price-value">{displayPrice}</span>
-                  )}
-                  {!loading && (
-                    <span className="dp-price-note">
-                      Includes {dataNum} {dataUnit} data · {durNum}-{durUnit}{" "}
-                      validity
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={handleOrderNow}
-                  className="dp-cta-btn"
-                  disabled={loading || !product}
-                >
-                  Order now →
-                </button>
-              </div>
-            </div>
-
-            {/* RIGHT — Gallery */}
-            <ProductGallery
-              loading={loading}
-              images={product?.images ?? []}
-              name={displayName}
-            />
-          </div>
-        </div>
-
-        {/* ── BODY ── */}
-        <div className="dp-body">
-          {/* Package includes */}
-          <div>
-            <div className="dp-section-label">Package includes</div>
-            <div className="dp-box-grid">
-              <div className="dp-box-card accent-blue">
-                <span className="dp-box-icon">📶</span>
-                <div>
-                  <div className="dp-box-value">
-                    {loading ? (
-                      <Skeleton w={60} h={28} />
-                    ) : (
-                      <>
-                        {dataNum}
-                        <span className="dp-box-value-unit">{dataUnit}</span>
-                      </>
-                    )}
-                  </div>
-                  <p className="dp-box-title" style={{ marginTop: 4 }}>
-                    Mobile Data
-                  </p>
-                </div>
-                <p className="dp-box-body">
-                  High-speed data valid across Mainland China, Hong Kong, and
-                  Macau. No throttling on standard browsing and streaming.
-                </p>
-                <span className="dp-box-tag dp-box-tag-green">
-                  {loading ? "—" : `${dataNum} ${dataUnit} included`}
-                </span>
-              </div>
-              <div className="dp-box-card accent-green">
-                <span className="dp-box-icon">📅</span>
-                <div>
-                  <div className="dp-box-value">
-                    {loading ? (
-                      <Skeleton w={60} h={28} />
-                    ) : (
-                      <>
-                        {durNum}
-                        <span className="dp-box-value-unit">{durUnit}</span>
-                      </>
-                    )}
-                  </div>
-                  <p className="dp-box-title" style={{ marginTop: 4 }}>
-                    Validity Period
-                  </p>
-                </div>
-                <p className="dp-box-body">
-                  Countdown starts only from first use — not from purchase. Your
-                  data stays ready until you need it.
-                </p>
-                <span className="dp-box-tag dp-box-tag-green">
-                  {loading ? "—" : `${durNum} ${durUnit} from first use`}
-                </span>
-              </div>
-              <div className="dp-box-card accent-orange">
-                <span className="dp-box-icon">🔌</span>
-                <div>
-                  <div className="dp-box-value" style={{ fontSize: 20 }}>
-                    USB-C
-                  </div>
-                  <p className="dp-box-title" style={{ marginTop: 4 }}>
-                    Dongle Device
-                  </p>
-                </div>
-                <p className="dp-box-body">
-                  Compact plug-and-play dongle compatible with any USB Type-C
-                  device. No drivers, apps, or configuration required.
-                </p>
-                <span className="dp-box-tag dp-box-tag-orange">
-                  PH pick-up / delivery
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* How to use */}
-          <div>
-            <div className="dp-section-label">How to use</div>
-            <div className="dp-steps-grid">
-              {STEPS.map(({ n, title, body, icon }) => (
-                <div key={n} className="dp-step-card">
-                  <div className="dp-step-header">
-                    <span className="dp-step-icon">{icon}</span>
-                    <span className="dp-step-num">{n}</span>
-                  </div>
-                  <p className="dp-step-title">{title}</p>
-                  <p className="dp-step-body">{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* No VPN */}
-          <div>
-            <div className="dp-section-label">Open access — no VPN needed</div>
-            <div className="dp-novpn-grid">
-              <p className="dp-novpn-intro">
-                Services normally restricted in Mainland China work out of the
-                box. No configuration, no workarounds — just plug in and use
-                what you need.
-              </p>
-              <div className="dp-services-row">
-                {SERVICES.map(({ label, icon }) => (
-                  <div key={label} className="dp-service-chip">
-                    <span className="dp-service-icon">{icon}</span>
-                    <span className="dp-service-name">{label}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="dp-novpn-badge">
-                <span className="dp-novpn-dot" />
-                Works in Mainland China, HK &amp; Macau
-              </div>
-            </div>
-          </div>
-
-          {/* Coverage */}
-          <div>
-            <div className="dp-section-label">Coverage</div>
-            <div className="dp-coverage-grid">
-              {[
-                {
-                  flag: "🇨🇳",
-                  name: "Mainland China",
-                  note: "Full coverage",
-                  desc: "Nationwide coverage including Beijing, Shanghai, Shenzhen, and all major cities. Bypasses the Great Firewall — no VPN required.",
-                },
-                {
-                  flag: "🇭🇰",
-                  name: "Hong Kong",
-                  note: "Full coverage",
-                  desc: "Complete coverage across Hong Kong Island, Kowloon, and the New Territories.",
-                },
-                {
-                  flag: "🇲🇴",
-                  name: "Macau",
-                  note: "Full coverage",
-                  desc: "Full coverage across the Macau Peninsula, Taipa, and the Cotai Strip.",
-                },
-              ].map(({ flag, name, note, desc }) => (
-                <div key={name} className="dp-coverage-card">
-                  <span className="dp-cov-flag">{flag}</span>
-                  <span className="dp-cov-name">{name}</span>
-                  <span className="dp-cov-note">✓ {note}</span>
-                  <p className="dp-cov-desc">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top-up */}
-          <div>
-            <div className="dp-section-label">Data top-up &amp; renewal</div>
-            <div className="dp-topup-box">
-              <div className="dp-topup-icon">📞</div>
-              <div>
-                <p className="dp-topup-title">Need more data?</p>
-                <p className="dp-topup-body">
-                  If you consume all {displayData} or need additional data,
-                  please contact our customer service team. We'll walk you
-                  through the available top-up and renewal options.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom CTA */}
-          <div className="dp-cta-band">
-            <div className="dp-cta-band-left">
-              <h2>Ready to travel without limits?</h2>
-              <p>
-                {displayData} · {displayDuration} · {displayDest}
-                <br />
-                No VPN · No SIM · No registration required
-              </p>
-            </div>
-            <div className="dp-cta-band-right">
-              {loading ? (
-                <Skeleton w={140} h={32} />
-              ) : (
-                <p className="dp-cta-band-price">{displayPrice}</p>
-              )}
-              <button
-                onClick={handleOrderNow}
-                className="dp-cta-band-btn"
-                disabled={loading || !product}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gap: "12px",
+                }}
               >
-                Order now →
-              </button>
-              <p className="dp-cta-band-note">
-                🇵🇭 Pick-up or delivery · Philippines only
-              </p>
+                {esimLoading ? (
+                  [...Array(10)].map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: "#fff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "14px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          aspectRatio: "16/10",
+                          background:
+                            "linear-gradient(90deg, #f0f4f8 25%, #e8eef6 50%, #f0f4f8 75%)",
+                          backgroundSize: "200% 100%",
+                          animation: "shimmer 1.4s ease-in-out infinite",
+                        }}
+                      />
+                      <div
+                        style={{
+                          height: "44px",
+                          background:
+                            "linear-gradient(90deg, #f8fafc 25%, #f0f4f8 50%, #f8fafc 75%)",
+                          backgroundSize: "200% 100%",
+                          animation: "shimmer 1.4s ease-in-out infinite 0.2s",
+                        }}
+                      />
+                    </div>
+                  ))
+                ) : filtered.length > 0 ? (
+                  filtered.map((dest, idx) => (
+                    <Link
+                      key={dest.id}
+                      href={`/destinations/${dest.slug}`}
+                      style={{
+                        display: "block",
+                        textDecoration: "none",
+                        background: "#fff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "14px",
+                        overflow: "hidden",
+                        transition:
+                          "border-color 0.18s, box-shadow 0.18s, transform 0.18s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "100%",
+                          aspectRatio: "16/10",
+                          overflow: "hidden",
+                          background: "#f0f4f8",
+                          position: "relative",
+                        }}
+                      >
+                        {dest.image ? (
+                          <img
+                            src={imgSrc(dest.image)}
+                            alt={dest.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontFamily:
+                                  "'Noto Color Emoji', 'Apple Color Emoji', sans-serif",
+                                fontSize: "32px",
+                              }}
+                            >
+                              {dest.flag ?? "🌐"}
+                            </span>
+                          </div>
+                        )}
+                        {dest.tags?.[0] && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: "8px",
+                              left: "8px",
+                              fontFamily: "'Sora', sans-serif",
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              padding: "3px 9px",
+                              borderRadius: "6px",
+                              textTransform: "capitalize",
+                              background:
+                                BADGE_STYLES[dest.tags[0]]?.bg ?? "#0a2540",
+                              color:
+                                BADGE_STYLES[dest.tags[0]]?.color ?? "#fff",
+                            }}
+                          >
+                            {dest.tags[0]}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          padding: "11px 14px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                          borderTop: "1px solid #e2e8f0",
+                          background: "#fff",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "7px",
+                            minWidth: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: "'IBM Plex Mono', monospace",
+                              fontSize: "9px",
+                              color: "#b0bccf",
+                              flex: "0 0 auto",
+                            }}
+                          >
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "'Sora', sans-serif",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              color: "#0a2540",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {dest.name}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            flex: "0 0 auto",
+                          }}
+                        >
+                          {dest.retail_price != null && (
+                            <span
+                              style={{
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontSize: "10.5px",
+                                fontWeight: 600,
+                                color: "#0052cc",
+                                whiteSpace: "nowrap",
+                                background: "#eef3fb",
+                                padding: "2px 6px",
+                                borderRadius: "6px",
+                              }}
+                            >
+                              from ₱
+                              {dest.retail_price.toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          )}
+                          {dest.plan_count != null && (
+                            <span
+                              style={{
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontSize: "9px",
+                                color: "#8a9ab5",
+                                whiteSpace: "nowrap",
+                                flex: "0 0 auto",
+                              }}
+                            >
+                              {dest.plan_count} plan
+                              {dest.plan_count === 1 ? "" : "s"}
+                            </span>
+                          )}
+                          <div
+                            style={{
+                              width: "22px",
+                              height: "22px",
+                              borderRadius: "50%",
+                              background: "#eef3fb",
+                              border: "1px solid #d4dfee",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#3b7dd8",
+                              fontSize: "11px",
+                              flex: "0 0 auto",
+                            }}
+                          >
+                            →
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div
+                    style={{
+                      gridColumn: "1/-1",
+                      padding: "48px",
+                      textAlign: "center",
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: "11px",
+                      color: "#b0bccf",
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    No destinations match your search
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
 
-        <Footer />
+            <Footer />
+          </div>
+        )}
       </div>
     </>
   );
