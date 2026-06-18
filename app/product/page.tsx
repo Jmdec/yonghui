@@ -478,7 +478,7 @@ export default function ProductsPage() {
         .dp-hero{
           padding:26px 40px;
           display:grid;
-          grid-template-columns:1fr 520px;
+          grid-template-columns:1fr 640px;
           gap:32px;
           align-items:start;
           max-width:1160px;
@@ -577,7 +577,7 @@ export default function ProductsPage() {
           border:1px solid #dde3ec;
           border-radius:16px;
           padding:14px;
-          aspect-ratio:5/4;
+          aspect-ratio:4/3;
           display:flex;align-items:center;justify-content:center;
           overflow:hidden;
         }
@@ -599,8 +599,8 @@ export default function ProductsPage() {
           letter-spacing:1px;
         }
         .dp-gallery-main img{
-        width:78%;
-  max-height:78%;
+        width:94%;
+  max-height:94%;
           height:auto;
           object-fit:contain;
           border-radius:10px;
@@ -612,7 +612,7 @@ export default function ProductsPage() {
         .dp-gallery-placeholder-text{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;text-align:center}
         .dp-gallery-thumbs{display:flex;gap:8px}
         .dp-gallery-thumb{
-          flex:1;height:90px;;border-radius:8px;object-fit:cover;
+          flex:1;height:120px;;border-radius:8px;object-fit:cover;
           cursor:pointer;border:2px solid transparent;
           transition:border-color 0.15s,opacity 0.15s;opacity:0.6;
         }
@@ -751,7 +751,7 @@ export default function ProductsPage() {
         }
 
         /* ── RESPONSIVE ── */
-        @media(max-width:960px){
+        @media(max-width:1100px){
           .dp-hero{grid-template-columns:1fr;padding:24px 20px;gap:28px}
           .dp-body{padding:24px 20px 48px;gap:24px}
           .dp-steps-grid{grid-template-columns:repeat(2,1fr)}
