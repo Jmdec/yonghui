@@ -87,6 +87,15 @@ function parseAmount(
   return { num, unit };
 }
 
+/** Split a block of prose into individual sentences so it can render as a
+ * scannable list instead of one dense paragraph. */
+function splitSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function Skeleton({
   w,
   h,
@@ -110,6 +119,9 @@ function Skeleton({
     />
   );
 }
+
+const DEFAULT_DESCRIPTION =
+  "Dongle is a portable mobile data device that does not require changing your SIM card. Simply plug it in and start using it instantly. Ideal for business travelers between the Philippines, Mainland China, Hong Kong, and Macau. No VPN required.";
 
 export default function DonglePage() {
   const [product, setProduct] = useState<DongleProduct | null>(null);
@@ -158,6 +170,7 @@ export default function DonglePage() {
     product?.destination_name ?? "Mainland China, Hong Kong & Macau";
   const displayName = product?.name ?? "USB-C Travel Internet Dongle";
   const displayDesc = product?.description ?? null;
+  const descSentences = splitSentences(displayDesc ?? DEFAULT_DESCRIPTION);
 
   // ── Data amount: could be "50", "50 GB", "50GB", etc. Always show GB.
   const rawData = product?.data_amount ?? "50";
@@ -198,10 +211,10 @@ export default function DonglePage() {
         /* ── HERO ── */
         .dp-hero-wrap{background:#fff;border-bottom:1px solid #e2e8f0}
         .dp-hero{
-          padding:32px 40px;
+          padding:26px 40px;
           display:grid;
-          grid-template-columns:1fr 440px;
-          gap:40px;
+          grid-template-columns:1fr 380px;
+          gap:32px;
           align-items:start;
           max-width:1160px;
           margin:0 auto;
@@ -212,30 +225,37 @@ export default function DonglePage() {
         .dp-eyebrow{
           display:inline-flex;align-items:center;gap:8px;
           font-family:'IBM Plex Mono',monospace;font-size:9px;
-          letter-spacing:3px;text-transform:uppercase;color:#bc6a08;margin-bottom:12px;
+          letter-spacing:3px;text-transform:uppercase;color:#bc6a08;margin-bottom:8px;
         }
         .dp-eyebrow::before{content:'';display:inline-block;width:16px;height:1px;background:#bc6a08}
 
         .dp-hero-title{
-          font-size:clamp(24px,2.8vw,38px);font-weight:800;line-height:1.08;
-          color:#0a2540;margin-bottom:10px;letter-spacing:-0.5px;
+          font-size:clamp(24px,2.8vw,36px);font-weight:800;line-height:1.04;
+          color:#0a2540;margin-bottom:6px;letter-spacing:-0.5px;
         }
         .dp-hero-title em{font-style:normal;color:#bc6a08}
 
         .dp-hero-tagline{
           font-size:11px;font-weight:600;color:#1d6fd8;
-          font-family:'IBM Plex Mono',monospace;letter-spacing:0.3px;margin-bottom:12px;
+          font-family:'IBM Plex Mono',monospace;letter-spacing:0.3px;margin-bottom:10px;
         }
-        .dp-hero-sub{font-size:13px;color:#4b5563;line-height:1.75;margin-bottom:16px;max-width:460px}
+
+        /* Description rendered as a short scannable list instead of one dense paragraph */
+        .dp-hero-sub-list{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;max-width:460px}
+        .dp-hero-sub-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#4b5563;line-height:1.5}
+        .dp-hero-sub-dot{width:5px;height:5px;border-radius:50%;background:#1d6fd8;flex-shrink:0;margin-top:6px}
+
+        /* Notice + coverage pills share one row to cut a stacked block */
+        .dp-meta-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 
         .dp-ph-notice{
           display:inline-flex;align-items:center;gap:6px;
           background:#fffbeb;border:1px solid #fcd34d;border-radius:7px;
           padding:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:9px;
-          color:#92400e;letter-spacing:0.5px;margin-bottom:14px;
+          color:#92400e;letter-spacing:0.5px;
         }
 
-        .dp-coverage-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+        .dp-coverage-row{display:flex;gap:6px;flex-wrap:wrap}
         .dp-cpill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid}
         .dp-cpill-cn{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
         .dp-cpill-hk{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
@@ -248,20 +268,20 @@ export default function DonglePage() {
           border:1px solid #dde5f0;
           border-radius:12px;
           overflow:hidden;
-          margin-bottom:18px;
+          margin-bottom:14px;
         }
-        .dp-stat{flex:1;padding:14px 18px;border-right:1px solid #dde5f0}
+        .dp-stat{flex:1;padding:11px 16px;border-right:1px solid #dde5f0}
         .dp-stat:last-child{border-right:none}
         .dp-stat-row{display:flex;align-items:baseline;gap:3px}
-        .dp-stat-val{font-size:28px;font-weight:800;color:#0a2540;line-height:1}
+        .dp-stat-val{font-size:26px;font-weight:800;color:#0a2540;line-height:1}
         .dp-stat-unit{
           font-size:13px;font-weight:700;color:#2563eb;
           font-family:'IBM Plex Mono',monospace;letter-spacing:0.5px;
         }
-        .dp-stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8a9ab5;letter-spacing:0.5px;margin-top:4px;text-transform:uppercase}
+        .dp-stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8a9ab5;letter-spacing:0.5px;margin-top:3px;text-transform:uppercase}
 
         /* ── Features ── */
-        .dp-features-list{display:flex;flex-direction:column;gap:5px;margin-bottom:20px}
+        .dp-features-list{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
         .dp-feature-item{display:flex;align-items:center;gap:8px;font-size:12px;color:#374151}
         .dp-feature-dot{width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0}
 
@@ -285,18 +305,37 @@ export default function DonglePage() {
         .dp-cta-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
 
         /* ── Gallery ── */
-        .dp-gallery{display:flex;flex-direction:column;gap:10px;animation:fadeUp 0.5s 0.1s ease both}
+        .dp-gallery{display:flex;flex-direction:column;gap:8px;animation:fadeUp 0.5s 0.1s ease both}
         .dp-gallery-main{
+          position:relative;
           background:linear-gradient(160deg,#f4f7fb,#e8eef6);
           border:1px solid #dde3ec;
-          border-radius:18px;
-          padding:16px;
+          border-radius:16px;
+          padding:14px;
+          aspect-ratio:5/4;
           display:flex;align-items:center;justify-content:center;
           overflow:hidden;
         }
+        .dp-gallery-main::before,
+        .dp-gallery-main::after{
+          content:'';position:absolute;width:16px;height:16px;
+          border:1.5px solid #c2d3ea;opacity:0.8;pointer-events:none;
+        }
+        .dp-gallery-main::before{top:12px;left:12px;border-right:none;border-bottom:none;border-top-left-radius:3px}
+        .dp-gallery-main::after{bottom:12px;right:12px;border-left:none;border-top:none;border-bottom-right-radius:3px}
+        .dp-gallery-fig{
+          position:absolute;top:13px;right:15px;
+          font-family:'IBM Plex Mono',monospace;font-size:9px;color:#9aacc9;
+          letter-spacing:1px;
+        }
+        .dp-gallery-spec{
+          position:absolute;bottom:13px;left:17px;
+          font-family:'IBM Plex Mono',monospace;font-size:9px;color:#9aacc9;
+          letter-spacing:1px;
+        }
         .dp-gallery-main img{
-          width:100%;
-          max-height:320px;
+          width:78%;
+          max-height:78%;
           height:auto;
           object-fit:contain;
           border-radius:10px;
@@ -304,11 +343,11 @@ export default function DonglePage() {
           transition:opacity 0.2s ease;
         }
         .dp-gallery-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:#94a3b8}
-        .dp-gallery-placeholder-icon{font-size:40px;opacity:0.5}
+        .dp-gallery-placeholder-icon{font-size:36px;opacity:0.5}
         .dp-gallery-placeholder-text{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;text-align:center}
         .dp-gallery-thumbs{display:flex;gap:8px}
         .dp-gallery-thumb{
-          flex:1;height:76px;border-radius:10px;object-fit:cover;
+          flex:1;height:60px;border-radius:8px;object-fit:cover;
           cursor:pointer;border:2px solid transparent;
           transition:border-color 0.15s,opacity 0.15s;opacity:0.6;
         }
@@ -317,12 +356,12 @@ export default function DonglePage() {
         .dp-gallery-cap{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8a9ab5;letter-spacing:1px;text-transform:uppercase;text-align:center}
 
         /* ── BODY ── */
-        .dp-body{max-width:1160px;margin:0 auto;width:100%;padding:32px 40px 56px;display:flex;flex-direction:column;gap:28px}
+        .dp-body{max-width:1160px;margin:0 auto;width:100%;padding:28px 40px 48px;display:flex;flex-direction:column;gap:22px}
 
         .dp-section-label{
           display:flex;align-items:center;gap:8px;
           font-family:'IBM Plex Mono',monospace;font-size:9px;color:#1d6fd8;
-          letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;font-weight:600;
+          letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-weight:600;
         }
         .dp-section-label::before{content:'';display:inline-block;width:14px;height:1px;background:#1d6fd8}
 
@@ -504,27 +543,42 @@ export default function DonglePage() {
                 Portable mobile data — no SIM card or registration required
               </p>
 
-              {displayDesc ? (
-                <p className="dp-hero-sub">{displayDesc}</p>
+              {/* Description as a short scannable list, not one dense paragraph */}
+              {loading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 7,
+                    marginBottom: 16,
+                  }}
+                >
+                  <Skeleton w="100%" h={14} />
+                  <Skeleton w="90%" h={14} />
+                  <Skeleton w="70%" h={14} />
+                </div>
               ) : (
-                <p className="dp-hero-sub">
-                  Dongle is a portable mobile data device that does not require
-                  changing your SIM card. Simply plug it in and start using it
-                  instantly. Ideal for business travelers between the
-                  Philippines, Mainland China, Hong Kong, and Macau. No VPN
-                  required.
-                </p>
+                <div className="dp-hero-sub-list">
+                  {descSentences.map((sentence, i) => (
+                    <div key={i} className="dp-hero-sub-item">
+                      <span className="dp-hero-sub-dot" />
+                      <span>{sentence}</span>
+                    </div>
+                  ))}
+                </div>
               )}
 
-              <div className="dp-ph-notice">
-                🇵🇭 &nbsp;Available for pick-up or delivery in the Philippines
-                only
-              </div>
-
-              <div className="dp-coverage-row">
-                <span className="dp-cpill dp-cpill-cn">🇨🇳 Mainland China</span>
-                <span className="dp-cpill dp-cpill-hk">🇭🇰 Hong Kong</span>
-                <span className="dp-cpill dp-cpill-mo">🇲🇴 Macau</span>
+              <div className="dp-meta-row">
+                <div className="dp-ph-notice">
+                  🇵🇭 &nbsp;PH pick-up or delivery only
+                </div>
+                <div className="dp-coverage-row">
+                  <span className="dp-cpill dp-cpill-cn">
+                    🇨🇳 Mainland China
+                  </span>
+                  <span className="dp-cpill dp-cpill-hk">🇭🇰 Hong Kong</span>
+                  <span className="dp-cpill dp-cpill-mo">🇲🇴 Macau</span>
+                </div>
               </div>
 
               {/* Stats strip — always shows units */}
@@ -832,11 +886,15 @@ function ProductGallery({
             <Skeleton w="100%" h={240} radius={10} />
           </div>
         ) : srcs.length > 0 ? (
-          <img
-            key={srcs[active]}
-            src={srcs[active]}
-            alt={`${name} – view ${active + 1}`}
-          />
+          <>
+            <span className="dp-gallery-fig">FIG. 01</span>
+            <img
+              key={srcs[active]}
+              src={srcs[active]}
+              alt={`${name} – view ${active + 1}`}
+            />
+            <span className="dp-gallery-spec">USB-C · PLUG &amp; PLAY</span>
+          </>
         ) : (
           <div className="dp-gallery-placeholder">
             <span className="dp-gallery-placeholder-icon">📷</span>
