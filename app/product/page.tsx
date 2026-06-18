@@ -478,7 +478,7 @@ export default function ProductsPage() {
         .dp-hero{
           padding:26px 40px;
           display:grid;
-          grid-template-columns:1fr 380px;
+          grid-template-columns:1fr 520px;
           gap:32px;
           align-items:start;
           max-width:1160px;
@@ -599,8 +599,8 @@ export default function ProductsPage() {
           letter-spacing:1px;
         }
         .dp-gallery-main img{
-          width:78%;
-          max-height:78%;
+        width:78%;
+  max-height:78%;
           height:auto;
           object-fit:contain;
           border-radius:10px;
@@ -612,7 +612,7 @@ export default function ProductsPage() {
         .dp-gallery-placeholder-text{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;text-align:center}
         .dp-gallery-thumbs{display:flex;gap:8px}
         .dp-gallery-thumb{
-          flex:1;height:60px;border-radius:8px;object-fit:cover;
+          flex:1;height:90px;;border-radius:8px;object-fit:cover;
           cursor:pointer;border:2px solid transparent;
           transition:border-color 0.15s,opacity 0.15s;opacity:0.6;
         }
@@ -766,7 +766,7 @@ export default function ProductsPage() {
           .dp-stat{border-right:none;border-bottom:1px solid #dde5f0}
           .dp-stat:last-child{border-bottom:none}
           .dp-price-cta{flex-direction:column;align-items:flex-start}
-          .dp-gallery-thumb{height:60px}
+          .dp-gallery-thumb{height:90px}
         }
       `}</style>
 
