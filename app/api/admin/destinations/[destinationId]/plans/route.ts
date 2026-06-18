@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 const LARAVEL_API = process.env.LARAVEL_API_URL ?? "http://localhost:8000";
 
 function authHeaders(req: NextRequest) {
-  const auth = req.headers.get("authorization") ?? "";
+  const token = req.cookies.get("auth_token")?.value;
   return {
     "Content-Type": "application/json",
-    ...(auth ? { Authorization: auth } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 

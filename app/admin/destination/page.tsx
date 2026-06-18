@@ -121,7 +121,17 @@ function toSlug(str: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
-
+function adminFetch(url: string, options: RequestInit = {}) {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers ?? {}),
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  });
+}
 // ─── Shared styles ─────────────────────────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -470,11 +480,14 @@ function EsimCodesModal({
     setAddError("");
     setAddSuccess("");
     try {
-      const res = await fetch(`/api/admin/plans/${plan.id}/esim-codes/bulk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codes: lines }),
-      });
+      const res = await adminFetch(
+        `/api/admin/plans/${plan.id}/esim-codes/bulk`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codes: lines }),
+        },
+      );
       const d = await res.json();
       if (!res.ok) {
         setAddError(d.message ?? "Failed to add codes.");
@@ -492,7 +505,7 @@ function EsimCodesModal({
 
   const handleDelete = async (codeId: number) => {
     if (!confirm("Delete this code?")) return;
-    await fetch(`/api/admin/esim-codes/${codeId}`, { method: "DELETE" });
+    await adminFetch(`/api/admin/esim-codes/${codeId}`, { method: "DELETE" });
     fetchCodes();
   };
 
@@ -888,7 +901,7 @@ function PlanModal({
         mode === "add"
           ? `/api/admin/destinations/${destination.id}/plans`
           : `/api/admin/destinations/${destination.id}/plans/${initial!.id}`;
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method: mode === "add" ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -1307,7 +1320,7 @@ function DeletePlanModal({
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await fetch(
+      await adminFetch(
         `/api/admin/destinations/${destination.id}/plans/${plan.id}`,
         { method: "DELETE" },
       );
@@ -1866,6 +1879,7 @@ function DestinationModal({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
+
   const [flag, setFlag] = useState(initial?.flag ?? "🌍");
   const [customFlag, setCustomFlag] = useState("");
   const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? 0);
