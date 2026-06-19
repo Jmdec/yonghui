@@ -750,6 +750,71 @@ export default function ProductsPage() {
           max-width:400px;margin:32px auto;
         }
 
+        /* ── eSIM grid ── */
+        .dp-esim-grid{
+          display:grid;
+          grid-template-columns:repeat(5,1fr);
+          gap:12px;
+        }
+        .dp-esim-card{
+          display:block;
+          text-decoration:none;
+          background:#fff;
+          border:1px solid #e2e8f0;
+          border-radius:14px;
+          overflow:hidden;
+          transition:border-color 0.18s,box-shadow 0.18s,transform 0.18s;
+        }
+        .dp-esim-card-img{
+          width:100%;
+          aspect-ratio:16/10;
+          overflow:hidden;
+          background:#f0f4f8;
+          position:relative;
+        }
+        .dp-esim-card-img img{
+          width:100%;
+          height:100%;
+          object-fit:cover;
+          display:block;
+        }
+        .dp-esim-card-badge{
+          position:absolute;top:8px;left:8px;
+          font-family:'Sora',sans-serif;font-size:10px;font-weight:600;
+          padding:3px 9px;border-radius:6px;text-transform:capitalize;
+        }
+        .dp-esim-card-body{
+          padding:11px 14px;
+          display:flex;
+          flex-direction:column;
+          gap:6px;
+          border-top:1px solid #e2e8f0;
+          background:#fff;
+        }
+        .dp-esim-card-title-row{display:flex;align-items:center;gap:7px;min-width:0}
+        .dp-esim-card-idx{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#b0bccf;flex:0 0 auto}
+        .dp-esim-card-name{
+          font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:#0a2540;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .dp-esim-card-meta-row{
+          display:flex;align-items:center;justify-content:space-between;
+          gap:6px;flex-wrap:wrap;
+        }
+        .dp-esim-card-price{
+          font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;
+          color:#0052cc;white-space:nowrap;background:#eef3fb;
+          padding:2px 6px;border-radius:6px;
+        }
+        .dp-esim-card-plans{
+          font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8a9ab5;white-space:nowrap;
+        }
+        .dp-esim-card-arrow{
+          width:22px;height:22px;border-radius:50%;background:#eef3fb;
+          border:1px solid #d4dfee;display:flex;align-items:center;justify-content:center;
+          color:#3b7dd8;font-size:11px;flex:0 0 auto;
+        }
+
         /* ── RESPONSIVE ── */
         @media(max-width:1100px){
           .dp-hero{grid-template-columns:1fr;padding:24px 20px;gap:28px}
@@ -759,6 +824,13 @@ export default function ProductsPage() {
           .dp-cta-band{flex-direction:column;text-align:center;padding:28px 20px}
           .dp-cta-band-right{align-items:center}
           .dp-cta-band-note{text-align:center}
+          .dp-esim-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        @media(max-width:900px){
+          .dp-esim-grid{grid-template-columns:repeat(3,1fr)}
+        }
+        @media(max-width:600px){
+          .dp-esim-grid{grid-template-columns:repeat(2,1fr)}
         }
         @media(max-width:540px){
           .dp-steps-grid{grid-template-columns:1fr}
@@ -767,6 +839,10 @@ export default function ProductsPage() {
           .dp-stat:last-child{border-bottom:none}
           .dp-price-cta{flex-direction:column;align-items:flex-start}
           .dp-gallery-thumb{height:90px}
+        }
+        @media(max-width:380px){
+          .dp-esim-grid{gap:8px}
+          .dp-esim-card-body{padding:9px 10px}
         }
       `}</style>
 
@@ -1603,13 +1679,7 @@ export default function ProductsPage() {
                     : "All destinations"}
                 </div>
               )}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(5, 1fr)",
-                  gap: "12px",
-                }}
-              >
+              <div className="dp-esim-grid">
                 {esimLoading ? (
                   [...Array(10)].map((_, i) => (
                     <div
@@ -1646,37 +1716,11 @@ export default function ProductsPage() {
                     <Link
                       key={dest.id}
                       href={`/destinations/${dest.slug}`}
-                      style={{
-                        display: "block",
-                        textDecoration: "none",
-                        background: "#fff",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "14px",
-                        overflow: "hidden",
-                        transition:
-                          "border-color 0.18s, box-shadow 0.18s, transform 0.18s",
-                      }}
+                      className="dp-esim-card"
                     >
-                      <div
-                        style={{
-                          width: "100%",
-                          aspectRatio: "16/10",
-                          overflow: "hidden",
-                          background: "#f0f4f8",
-                          position: "relative",
-                        }}
-                      >
+                      <div className="dp-esim-card-img">
                         {dest.image ? (
-                          <img
-                            src={imgSrc(dest.image)}
-                            alt={dest.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              display: "block",
-                            }}
-                          />
+                          <img src={imgSrc(dest.image)} alt={dest.name} />
                         ) : (
                           <div
                             style={{
@@ -1700,16 +1744,8 @@ export default function ProductsPage() {
                         )}
                         {dest.tags?.[0] && (
                           <span
+                            className="dp-esim-card-badge"
                             style={{
-                              position: "absolute",
-                              top: "8px",
-                              left: "8px",
-                              fontFamily: "'Sora', sans-serif",
-                              fontSize: "10px",
-                              fontWeight: 600,
-                              padding: "3px 9px",
-                              borderRadius: "6px",
-                              textTransform: "capitalize",
                               background:
                                 BADGE_STYLES[dest.tags[0]]?.bg ?? "#0a2540",
                               color:
@@ -1720,108 +1756,39 @@ export default function ProductsPage() {
                           </span>
                         )}
                       </div>
-                      <div
-                        style={{
-                          padding: "11px 14px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "8px",
-                          borderTop: "1px solid #e2e8f0",
-                          background: "#fff",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "7px",
-                            minWidth: 0,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "'IBM Plex Mono', monospace",
-                              fontSize: "9px",
-                              color: "#b0bccf",
-                              flex: "0 0 auto",
-                            }}
-                          >
+                      <div className="dp-esim-card-body">
+                        <div className="dp-esim-card-title-row">
+                          <span className="dp-esim-card-idx">
                             {String(idx + 1).padStart(2, "0")}
                           </span>
-                          <span
-                            style={{
-                              fontFamily: "'Sora', sans-serif",
-                              fontSize: "12px",
-                              fontWeight: 600,
-                              color: "#0a2540",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {dest.name}
-                          </span>
+                          <span className="dp-esim-card-name">{dest.name}</span>
                         </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            flex: "0 0 auto",
-                          }}
-                        >
-                          {dest.retail_price != null && (
-                            <span
-                              style={{
-                                fontFamily: "'IBM Plex Mono', monospace",
-                                fontSize: "10.5px",
-                                fontWeight: 600,
-                                color: "#0052cc",
-                                whiteSpace: "nowrap",
-                                background: "#eef3fb",
-                                padding: "2px 6px",
-                                borderRadius: "6px",
-                              }}
-                            >
-                              from ₱
-                              {dest.retail_price.toLocaleString("en-PH", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </span>
-                          )}
-                          {dest.plan_count != null && (
-                            <span
-                              style={{
-                                fontFamily: "'IBM Plex Mono', monospace",
-                                fontSize: "9px",
-                                color: "#8a9ab5",
-                                whiteSpace: "nowrap",
-                                flex: "0 0 auto",
-                              }}
-                            >
-                              {dest.plan_count} plan
-                              {dest.plan_count === 1 ? "" : "s"}
-                            </span>
-                          )}
+                        <div className="dp-esim-card-meta-row">
                           <div
                             style={{
-                              width: "22px",
-                              height: "22px",
-                              borderRadius: "50%",
-                              background: "#eef3fb",
-                              border: "1px solid #d4dfee",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              color: "#3b7dd8",
-                              fontSize: "11px",
-                              flex: "0 0 auto",
+                              gap: "6px",
+                              flexWrap: "wrap",
                             }}
                           >
-                            →
+                            {dest.retail_price != null && (
+                              <span className="dp-esim-card-price">
+                                from ₱
+                                {dest.retail_price.toLocaleString("en-PH", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            )}
+                            {dest.plan_count != null && (
+                              <span className="dp-esim-card-plans">
+                                {dest.plan_count} plan
+                                {dest.plan_count === 1 ? "" : "s"}
+                              </span>
+                            )}
                           </div>
+                          <div className="dp-esim-card-arrow">→</div>
                         </div>
                       </div>
                     </Link>
