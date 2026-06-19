@@ -49,6 +49,7 @@ function Background() {
       }}
     >
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes float-blob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
         @keyframes blink-dot  { 0%,100%{opacity:1} 50%{opacity:.3} }
         @keyframes grow-bar   { from{width:0} to{width:var(--w)} }
@@ -56,6 +57,29 @@ function Background() {
         @keyframes btn-pulse  { 0%,100%{box-shadow:0 6px 24px rgba(0,87,217,.25)} 50%{box-shadow:0 6px 36px rgba(0,87,217,.4)} }
         @media (prefers-reduced-motion: reduce) {
           *{ animation: none !important; transition: none !important; }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .ab-hero        { grid-template-columns: 1fr !important; }
+          .ab-hero-photo  { display: none !important; }
+          .ab-stats       { grid-template-columns: repeat(2,1fr) !important; gap: 16px !important; }
+          .ab-flow        { grid-template-columns: repeat(2,1fr) !important; }
+          .ab-flow-line   { display: none !important; }
+          .ab-compare     { grid-template-columns: 1fr !important; }
+          .ab-specs       { grid-template-columns: 1fr !important; }
+          .ab-coverage    { grid-template-columns: 1fr !important; }
+          .ab-mission     { grid-template-columns: 1fr !important; }
+          .ab-story       { grid-template-columns: 1fr !important; }
+          .ab-why         { grid-template-columns: 1fr !important; }
+          .ab-cta-btns    { flex-direction: column !important; align-items: stretch !important; }
+          .ab-cta-btns a  { justify-content: center !important; }
+          .ab-pills       { gap: 8px !important; }
+          .ab-rec-badge   {
+            position: static !important;
+            margin-left: auto !important;
+            margin-top: 0 !important;
+          }
         }
       `}</style>
       <div
@@ -179,6 +203,7 @@ function Hero({ destCount }: { destCount: number | null }) {
       }}
     >
       <div
+        className="ab-hero"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -278,6 +303,7 @@ function Hero({ destCount }: { destCount: number | null }) {
 
           {/* Stats row */}
           <div
+            className="ab-stats"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(4,1fr)",
@@ -320,6 +346,7 @@ function Hero({ destCount }: { destCount: number | null }) {
 
         {/* ── Right: photo ── */}
         <div
+          className="ab-hero-photo"
           style={{
             position: "relative",
             borderRadius: 24,
@@ -340,7 +367,6 @@ function Hero({ destCount }: { destCount: number | null }) {
             }}
           />
 
-          {/* Subtle blue overlay tint */}
           <div
             style={{
               position: "absolute",
@@ -351,7 +377,6 @@ function Hero({ destCount }: { destCount: number | null }) {
             }}
           />
 
-          {/* Bottom-left frosted badge */}
           <div
             style={{
               position: "absolute",
@@ -409,7 +434,6 @@ function Hero({ destCount }: { destCount: number | null }) {
             </div>
           </div>
 
-          {/* Top-right pill */}
           <div
             style={{
               position: "absolute",
@@ -511,6 +535,7 @@ function EsimTech() {
 
       {/* Quick benefit pills */}
       <div
+        className="ab-pills"
         style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 36 }}
       >
         {[
@@ -566,6 +591,7 @@ function EsimTech() {
           How it works — 5 simple steps
         </div>
         <div
+          className="ab-flow"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(5, 1fr)",
@@ -574,6 +600,7 @@ function EsimTech() {
           }}
         >
           <div
+            className="ab-flow-line"
             style={{
               position: "absolute",
               top: 28,
@@ -655,6 +682,7 @@ function EsimTech() {
 
       {/* Comparison */}
       <div
+        className="ab-compare"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -662,6 +690,7 @@ function EsimTech() {
           marginBottom: 20,
         }}
       >
+        {/* Physical SIM card */}
         <div
           style={{
             background: "#ffffff",
@@ -716,6 +745,7 @@ function EsimTech() {
           ))}
         </div>
 
+        {/* YH eSIM card — overflow:visible so badge never clips */}
         <div
           style={{
             background: "#ffffff",
@@ -723,10 +753,11 @@ function EsimTech() {
             borderRadius: 18,
             padding: "24px 22px",
             position: "relative",
-            overflow: "hidden",
+            overflow: "visible",
             boxShadow: "0 2px 16px rgba(0,87,217,.08)",
           }}
         >
+          {/* Top accent bar */}
           <div
             style={{
               position: "absolute",
@@ -735,7 +766,7 @@ function EsimTech() {
               right: 0,
               height: 3,
               background: "#0057d9",
-              borderRadius: "18px 18px 0 0",
+              borderRadius: "16px 16px 0 0",
             }}
           />
           <div
@@ -744,6 +775,7 @@ function EsimTech() {
               alignItems: "center",
               gap: 10,
               marginBottom: 16,
+              flexWrap: "wrap",
             }}
           >
             <span style={{ fontSize: "1.4rem" }}>📲</span>
@@ -758,6 +790,7 @@ function EsimTech() {
               YH eSIM
             </span>
             <span
+              className="ab-rec-badge"
               style={{
                 marginLeft: "auto",
                 fontSize: "0.65rem",
@@ -768,6 +801,7 @@ function EsimTech() {
                 color: "#00a86b",
                 padding: "3px 9px",
                 borderRadius: 999,
+                whiteSpace: "nowrap",
               }}
             >
               Recommended
@@ -801,6 +835,7 @@ function EsimTech() {
 
       {/* Tech spec cards */}
       <div
+        className="ab-specs"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3,1fr)",
@@ -930,6 +965,7 @@ function Coverage() {
       }}
     >
       <div
+        className="ab-coverage"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -1091,6 +1127,7 @@ function Coverage() {
                     background: d.ok ? "#edfaf4" : "#fef9e7",
                     color: d.ok ? "#00a86b" : "#8a6000",
                     flexShrink: 0,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {d.status}
@@ -1150,6 +1187,7 @@ function Mission() {
         Why we exist
       </h2>
       <div
+        className="ab-mission"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3,1fr)",
@@ -1289,7 +1327,10 @@ function StoryAndWhy() {
         ...fadeStyle(visible),
       }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
+      <div
+        className="ab-story"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}
+      >
         <div>
           <Label text="Our story" />
           <h2
@@ -1407,6 +1448,7 @@ function StoryAndWhy() {
             trip.
           </p>
           <div
+            className="ab-why"
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
           >
             {WHY.map((w, i) => (
@@ -1519,6 +1561,7 @@ function CtaBanner() {
           connectivity. Your next adventure starts with an eSIM.
         </p>
         <div
+          className="ab-cta-btns"
           style={{
             display: "flex",
             gap: 12,
@@ -1599,7 +1642,6 @@ export default function AboutPage() {
         overflowX: "hidden",
       }}
     >
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
       <Background />
       <Navigation />
       <Hero destCount={destCount} />
