@@ -799,7 +799,7 @@ export default function ProductsPage() {
               transition: "all 0.18s",
             }}
           >
-            Travel Dongle
+            Dongle Device
           </button>
           <button
             onClick={() => setActiveTab("esim")}
@@ -816,7 +816,7 @@ export default function ProductsPage() {
               transition: "all 0.18s",
             }}
           >
-            eSIM Destinations
+            eSIM
           </button>
         </div>
 
